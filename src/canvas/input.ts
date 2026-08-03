@@ -27,6 +27,38 @@ function isPointInRect(x: number, y: number, rect: DOMRect): boolean {
   return x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
 }
 
+const ORIGINAL_TILE_SIZE = 16;
+
+function getContentMetrics(layout: BoardLayout): {
+  cellOffsetX: number;
+  cellOffsetY: number;
+  faceX: number;
+  faceY: number;
+  faceSize: number;
+} {
+  const scale = Math.max(1, Math.round(layout.cellSize / ORIGINAL_TILE_SIZE));
+  const menuHeight = Math.max(1, Math.round(20 * scale));
+  const scoreBarHeight = Math.max(1, Math.round(34 * scale));
+  const contentPadding = Math.max(1, Math.round(5 * scale));
+  const scoreGap = Math.max(1, Math.round(5 * scale));
+  const innerContentBorder = Math.max(1, Math.round(3 * scale));
+
+  const scoreBarWidth = Math.floor(layout.board.width + innerContentBorder * 2);
+  const scoreBarX = Math.floor(layout.board.x + contentPadding);
+  const scoreBarY = Math.floor(layout.topBar.y + menuHeight + contentPadding);
+  const faceSize = Math.floor(layout.face.size);
+  const faceX = Math.floor(scoreBarX + (scoreBarWidth - faceSize) / 2);
+  const faceY = Math.floor(scoreBarY + (scoreBarHeight - faceSize) / 2);
+
+  return {
+    cellOffsetX: Math.floor(contentPadding + innerContentBorder),
+    cellOffsetY: Math.floor(contentPadding + scoreGap + innerContentBorder),
+    faceX,
+    faceY,
+    faceSize,
+  };
+}
+
 function getCellIndexFromPoint(
   clientX: number,
   clientY: number,
@@ -34,8 +66,9 @@ function getCellIndexFromPoint(
   layout: BoardLayout,
 ): number {
   const bounds = canvas.getBoundingClientRect();
-  const localX = clientX - bounds.left - layout.board.x;
-  const localY = clientY - bounds.top - layout.board.y;
+  const { cellOffsetX, cellOffsetY } = getContentMetrics(layout);
+  const localX = clientX - bounds.left - layout.board.x - cellOffsetX;
+  const localY = clientY - bounds.top - layout.board.y - cellOffsetY;
 
   if (localX < 0 || localY < 0 || localX >= layout.board.width || localY >= layout.board.height) {
     return -1;
@@ -55,12 +88,13 @@ function isFacePoint(clientX: number, clientY: number, canvas: HTMLCanvasElement
   const bounds = canvas.getBoundingClientRect();
   const x = clientX - bounds.left;
   const y = clientY - bounds.top;
+  const { faceX, faceY, faceSize } = getContentMetrics(layout);
 
   return (
-    x >= layout.face.x &&
-    y >= layout.face.y &&
-    x <= layout.face.x + layout.face.size &&
-    y <= layout.face.y + layout.face.size
+    x >= faceX &&
+    y >= faceY &&
+    x <= faceX + faceSize &&
+    y <= faceY + faceSize
   );
 }
 

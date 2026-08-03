@@ -1,5 +1,5 @@
 import type { GameState } from '../core/types';
-import { BoardLayout } from './layout';
+import { BoardLayout, type BoardRect } from './layout';
 import dead from '../ui/assets/dead.png';
 import smile from '../ui/assets/smile.png';
 import win from '../ui/assets/win.png';
@@ -74,6 +74,7 @@ const imageReadyListeners = new Set<ImageReadyListener>();
 let imagesAreReady = false;
 let imageLoadAttemptCount = 0;
 const imageLoadAttempts = new Set<string>();
+const ORIGINAL_TILE_SIZE = 16;
 
 function markImageLoaded(key: string): void {
   if (imageLoadAttempts.has(key)) {
@@ -131,30 +132,6 @@ export function onImagesLoaded(callback: ImageReadyListener): () => void {
 
 notifyImageReady();
 
-function drawImageFrame(
-  ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  inset = 0,
-): void {
-  if (!image.complete) return;
-  const safeInset = Math.max(0, Math.floor(inset));
-  const targetX = x + safeInset;
-  const targetY = y + safeInset;
-  const targetWidth = Math.max(1, Math.floor(width - safeInset * 2));
-  const targetHeight = Math.max(1, Math.floor(height - safeInset * 2));
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(x, y, width, height);
-  ctx.clip();
-  ctx.drawImage(image, targetX, targetY, targetWidth, targetHeight);
-  ctx.restore();
-}
-
 function drawCellSprite(
   ctx: CanvasRenderingContext2D,
   image: HTMLImageElement,
@@ -180,7 +157,7 @@ function drawCellBackground(
   const cellX = Math.floor(x);
   const cellY = Math.floor(y);
   const cellSize = Math.max(1, Math.floor(size));
-  const scale = Math.max(1, Math.round(cellSize / 16));
+  const scale = Math.max(1, Math.round(cellSize / ORIGINAL_TILE_SIZE));
   const raisedBorder = Math.max(1, Math.round(2 * scale));
   const openBorder = Math.max(1, Math.round(1 * scale));
 
@@ -256,23 +233,15 @@ function drawCounter(
   const sampleImg = getDigitImage('0');
   const ratio = sampleImg?.width ? sampleImg.width / Math.max(1, sampleImg.height) : 13 / 23;
   const scale = Math.max(1, Math.round(rect.width / 40));
-  const inset = Math.max(1, scale);
-
-  const availableWidth = Math.max(1, rect.width - inset * 2);
-  const availableHeight = Math.max(1, rect.height - inset);
-  let digitHeight = Math.max(1, availableHeight);
-  let digitWidth = Math.round(digitHeight * ratio);
   const spacing = 0;
-  const requiredWidth = () => chars.length * digitWidth + (chars.length - 1) * spacing;
+  const digitHeight = Math.max(1, rect.height - scale);
+  const digitWidth = Math.max(1, Math.round(digitHeight * ratio));
+  const requiredWidth = chars.length * digitWidth + (chars.length - 1) * spacing;
+  const availableWidth = Math.max(1, rect.width - scale);
+  if (requiredWidth > availableWidth) return;
 
-  while (requiredWidth() > availableWidth && digitHeight > 1) {
-    digitHeight -= 1;
-    digitWidth = Math.max(1, Math.round(digitHeight * ratio));
-  }
-
-  const blockWidth = requiredWidth();
-  const txStart = rect.x + rect.width - inset - blockWidth;
-  const ty = rect.y + Math.max(0, Math.round((rect.height - digitHeight) / 2));
+  const txStart = rect.x + rect.width - scale - requiredWidth;
+  const ty = Math.max(0, Math.round(rect.y + (rect.height - digitHeight) / 2));
 
   chars.forEach((char, index) => {
     const img = getDigitImage(char);
@@ -292,7 +261,7 @@ function drawCounterFrame(
   const h = Math.max(1, Math.floor(rect.height));
   const scale = Math.max(1, Math.round(w / 40));
 
-  ctx.fillStyle = '#ece9d8';
+  ctx.fillStyle = '#c0c0c0';
   ctx.fillRect(x, y, w, h);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(x + w - scale, y, scale, h);
@@ -310,15 +279,40 @@ function drawFace(
   const isDead = status === 'died';
   const isWon = status === 'won';
   const src = isDead ? images.dead : isWon ? images.win : pressing ? images.ohh : images.smile;
-  const scale = Math.max(1, Math.round(size / 16));
+  const scale = Math.max(1, Math.round(size / 24));
   const border = Math.max(1, Math.round(2 * scale));
+  const pressedBorder = Math.max(1, Math.round(1 * scale));
+  const faceShift = Math.max(1, Math.round(1 * scale));
+  const iconSide = Math.max(1, Math.round(size * (17 / 24)));
+  const iconOffset = Math.round((size - iconSide) / 2) + (pressing ? Math.max(0, 1) : 0);
+  const faceX = x + faceShift;
 
   ctx.fillStyle = '#c0c0c0';
-  ctx.fillRect(x, y, size, size);
+  ctx.fillRect(faceX, y, size, size);
+
   ctx.fillStyle = '#808080';
-  ctx.fillRect(x, y, size, border);
-  ctx.fillRect(x, y, border, size);
-  drawImageFrame(ctx, src, x + Math.round(size * 0.12), y + Math.round(size * 0.12), Math.round(size * 0.76), Math.round(size * 0.76));
+  ctx.fillRect(faceX, y, faceShift, size);
+  ctx.fillRect(faceX, y, size, faceShift);
+
+  ctx.fillStyle = '#808080';
+  if (pressing) {
+    const pressed = pressedBorder;
+    ctx.fillRect(faceX, y, size, pressed);
+    ctx.fillRect(faceX, y + size - pressed, size, pressed);
+    ctx.fillRect(faceX, y, pressed, size);
+    ctx.fillRect(faceX + size - pressed, y, pressed, size);
+  } else {
+    ctx.fillStyle = '#f5f5f5';
+    ctx.fillRect(faceX, y, size, border);
+    ctx.fillRect(faceX, y, border, size);
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(faceX, y + size - border, size, border);
+    ctx.fillRect(faceX + size - border, y, border, size);
+  }
+
+  if (src.complete) {
+    ctx.drawImage(src, faceX + iconOffset, y + iconOffset, iconSide, iconSide);
+  }
 }
 
 function getOpenSprite(minesAround: number): HTMLImageElement {
@@ -352,7 +346,7 @@ function drawCeilContent(
   size: number,
 ): void {
   const { state: ceilState, minesAround } = state;
-  const raised = ['cover', 'unknown'].includes(ceilState) ? state.opening : true;
+  const raised = ['cover', 'unknown'].includes(ceilState) && !state.opening;
   drawCellBackground(ctx, x, y, size, raised);
 
   switch (ceilState) {
@@ -402,38 +396,79 @@ export function renderFrame(
   const width = viewportWidth;
   const height = viewportHeight;
   const { board, topBar } = layout;
+  const scale = Math.max(1, Math.round(layout.cellSize / ORIGINAL_TILE_SIZE));
+  const menuHeight = Math.max(1, Math.round(20 * scale));
+  const scoreHeight = Math.max(1, Math.round(34 * scale));
+  const contentPadding = Math.max(1, Math.round(5 * scale));
+  const scoreGap = Math.max(1, Math.round(5 * scale));
+  const scoreBorder = Math.max(1, Math.round(2 * scale));
+  const innerContentBorder = Math.max(1, Math.round(3 * scale));
+  const cellOffsetX = contentPadding + innerContentBorder;
+  const cellOffsetY = contentPadding + scoreGap + innerContentBorder;
 
-  ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = 'rgb(35, 35, 35)';
-  ctx.fillRect(0, 0, width, height);
+  const scoreX = Math.floor(board.x + contentPadding);
+  const scoreY = Math.floor(topBar.y + menuHeight + contentPadding);
+  const scoreW = Math.floor(board.width + innerContentBorder * 2);
+  const scoreH = scoreHeight;
 
-  const remainMines = state.mines - countFlags(state);
-
-  const borderScale = Math.max(1, Math.round(layout.cellSize / 16));
-  const innerContentBorder = Math.max(1, 3 * borderScale);
-  const topBarBorder = innerContentBorder;
-
-  ctx.fillStyle = '#c0c0c0';
-  ctx.strokeStyle = '#646464';
-  ctx.lineWidth = topBarBorder;
-  ctx.fillRect(topBar.x - topBarBorder, topBar.y - topBarBorder, topBar.width + topBarBorder * 2, topBar.height + topBarBorder);
-  ctx.strokeRect(topBar.x - topBarBorder, topBar.y - topBarBorder, topBar.width + topBarBorder * 2, topBar.height + topBarBorder);
-
-  drawCounterFrame(ctx, layout.leftCounter);
-  drawCounterFrame(ctx, layout.rightCounter);
-  drawCounter(ctx, remainMines, layout.leftCounter);
-  drawCounter(ctx, options.timerSeconds, layout.rightCounter);
-  drawFace(ctx, state.status, layout.face.x, layout.face.y, layout.face.size, options.facePressed ?? false);
-
-  // board base
   const boardOuterX = Math.floor(board.x);
   const boardOuterY = Math.floor(board.y);
   const boardOuterW = Math.floor(board.width);
   const boardOuterH = Math.floor(board.height);
-  const boardX0 = boardOuterX - innerContentBorder;
-  const boardY0 = boardOuterY - innerContentBorder;
+  const boardX0 = Math.floor(boardOuterX + contentPadding);
+  const boardY0 = Math.floor(boardOuterY + scoreGap + contentPadding);
   const boardW = boardOuterW + innerContentBorder * 2;
   const boardH = boardOuterH + innerContentBorder * 2;
+
+  const topBarX = Math.floor(topBar.x);
+  const topBarY = Math.floor(topBar.y);
+  const topBarW = Math.floor(topBar.width);
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = 'rgb(35, 35, 35)';
+  ctx.fillRect(0, 0, width, height);
+  ctx.imageSmoothingEnabled = false;
+
+  const remainMines = state.mines - countFlags(state);
+
+  ctx.fillStyle = '#ece9d8';
+  ctx.fillRect(topBarX, topBarY, topBarW, menuHeight);
+  ctx.fillStyle = '#c0c0c0';
+  ctx.fillRect(scoreX, scoreY, scoreW, contentPadding);
+
+  ctx.fillStyle = '#c0c0c0';
+  ctx.fillRect(scoreX, scoreY, scoreW, scoreH);
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(scoreX, scoreY, scoreW, scoreBorder);
+  ctx.fillRect(scoreX, scoreY, scoreBorder, scoreH);
+  ctx.fillStyle = '#f5f5f5';
+  ctx.fillRect(scoreX + scoreW - scoreBorder, scoreY, scoreBorder, scoreH);
+  ctx.fillRect(scoreX, scoreY + scoreH - scoreBorder, scoreW, scoreBorder);
+
+  const counterWidth = Math.max(1, Math.round(40 * scale));
+  const counterHeight = Math.max(1, Math.round(24 * scale));
+  const counterTop = Math.floor(scoreY + (scoreH - counterHeight) / 2);
+  const leftCounter = {
+    x: Math.floor(scoreX + Math.round(4 * scale)),
+    y: counterTop,
+    width: counterWidth,
+    height: counterHeight,
+  };
+  const rightCounter = {
+    x: Math.floor(scoreX + scoreW - Math.round(7 * scale) - counterWidth),
+    y: counterTop,
+    width: counterWidth,
+    height: counterHeight,
+  };
+  const faceX = Math.floor(scoreX + (scoreW - layout.face.size) / 2);
+  const faceY = Math.floor(scoreY + (scoreH - layout.face.size) / 2);
+
+  drawCounterFrame(ctx, leftCounter);
+  drawCounterFrame(ctx, rightCounter);
+  drawCounter(ctx, remainMines, leftCounter);
+  drawCounter(ctx, options.timerSeconds, rightCounter);
+  drawFace(ctx, state.status, faceX, faceY, layout.face.size, options.facePressed ?? false);
+
   ctx.fillStyle = '#c0c0c0';
   ctx.fillRect(boardX0, boardY0, boardW, boardH);
   ctx.fillStyle = '#808080';
@@ -447,8 +482,8 @@ export function renderFrame(
     for (let column = 0; column < state.columns; column += 1) {
       const index = row * state.columns + column;
       const ceil = state.ceils[index];
-      const x = board.x + column * layout.cellSize;
-      const y = board.y + row * layout.cellSize;
+      const x = board.x + cellOffsetX + column * layout.cellSize;
+      const y = board.y + cellOffsetY + row * layout.cellSize;
       if (!ceil) continue;
       drawCeilContent(ctx, ceil, x, y, layout.cellSize);
     }
