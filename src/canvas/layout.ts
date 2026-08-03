@@ -83,11 +83,14 @@ export function computeAdaptiveBoardLayout(
   const boardWidth = columns * cellSize;
   const boardHeight = rows * cellSize;
 
-  const faceSize = Math.max(Math.round(16 * resolvedScale), Math.round(Math.min(cellSize * 1.5, SCORE_BAR_HEIGHT - Math.round(8 * resolvedScale))));
-  const digitHeight = Math.max(Math.round(SCORE_BAR_HEIGHT * 0.72), Math.round(18 * resolvedScale));
-  const digitWidth = Math.round(digitHeight * 0.62);
-  const counterWidth = digitWidth * 3 + Math.max(1, Math.round(6 * resolvedScale));
-  const totalHeight = topBarHeight + boardHeight;
+  const scoreBarPaddingX = Math.max(1, Math.round(4 * resolvedScale));
+  const scoreBarPaddingRight = Math.max(1, Math.round(7 * resolvedScale));
+  const counterHeight = Math.max(1, SCORE_BAR_HEIGHT - 2 * Math.round(2 * resolvedScale) - 2 * Math.round(3 * resolvedScale));
+  const counterWidth = Math.max(1, Math.round(40 * resolvedScale));
+  const faceSize = Math.max(
+    Math.round(16 * resolvedScale),
+    Math.round(Math.min(cellSize * 1.5, SCORE_BAR_HEIGHT - Math.round(8 * resolvedScale))),
+  );
 
   const x = Math.max(0, Math.round((viewport.width - boardWidth) / 2));
   const y = Math.max(0, Math.round(padding + reservedTop));
@@ -116,16 +119,16 @@ export function computeAdaptiveBoardLayout(
       size: faceSize,
     },
     leftCounter: {
-    x: Math.max(x + Math.round(cellSize * 0.25), 0),
-      y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - digitHeight) / 2),
+      x: Math.max(x + scoreBarPaddingX, 0),
+      y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - counterHeight) / 2),
       width: counterWidth,
-      height: digitHeight,
+      height: counterHeight,
     },
     rightCounter: {
-      x: Math.max(x + boardWidth - counterWidth - Math.round(cellSize * 0.25), 0),
-      y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - digitHeight) / 2),
+      x: Math.max(x + boardWidth - counterWidth - scoreBarPaddingRight, 0),
+      y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - counterHeight) / 2),
       width: counterWidth,
-      height: digitHeight,
+      height: counterHeight,
     },
   };
 }

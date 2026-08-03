@@ -317,28 +317,13 @@ function drawCounterFrame(
   const y = Math.floor(rect.y);
   const w = Math.max(1, Math.floor(rect.width));
   const h = Math.max(1, Math.floor(rect.height));
+  const scale = Math.max(1, Math.round(w / 40));
 
-  ctx.fillStyle = '#bdbdbd';
+  ctx.fillStyle = '#c0c0c0';
   ctx.fillRect(x, y, w, h);
-
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x + 1, y + h - 1);
-  ctx.lineTo(x + 1, y + 1);
-  ctx.lineTo(x + w - 1, y + 1);
-  ctx.stroke();
-
-  ctx.strokeStyle = '#666666';
-  ctx.beginPath();
-  ctx.moveTo(x + 1, y + h - 1);
-  ctx.lineTo(x + w - 1, y + h - 1);
-  ctx.lineTo(x + w - 1, y + 1);
-  ctx.stroke();
-
-  ctx.strokeStyle = '#7c7c7c';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x + w - scale, y, scale, h);
+  ctx.fillRect(x, y + h - scale, w, scale);
 }
 
 function drawFace(
@@ -352,16 +337,14 @@ function drawFace(
   const isDead = status === 'died';
   const isWon = status === 'won';
   const src = isDead ? images.dead : isWon ? images.win : pressing ? images.ohh : images.smile;
+  const scale = Math.max(1, Math.round(size / 16));
+  const border = Math.max(1, Math.round(1 * scale));
+
   ctx.fillStyle = '#c0c0c0';
   ctx.fillRect(x, y, size, size);
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x, y, size, size);
-  if (!isDead) {
-    ctx.strokeStyle = '#888';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, size, size);
-  }
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(x, y, size, border);
+  ctx.fillRect(x, y, border, size);
   drawImageFrame(ctx, src, x + Math.round(size * 0.12), y + Math.round(size * 0.12), Math.round(size * 0.76), Math.round(size * 0.76));
 }
 
@@ -453,11 +436,15 @@ export function renderFrame(
 
   const remainMines = state.mines - countFlags(state);
 
-  ctx.fillStyle = '#bdbdbd';
+  const borderScale = Math.max(1, Math.round(layout.cellSize / 16));
+  const innerContentBorder = Math.max(1, 3 * borderScale);
+  const topBarBorder = innerContentBorder;
+
+  ctx.fillStyle = '#c0c0c0';
   ctx.strokeStyle = '#646464';
-  ctx.lineWidth = 3;
-  ctx.fillRect(topBar.x - 3, topBar.y - 3, topBar.width + 6, topBar.height + 3);
-  ctx.strokeRect(topBar.x - 3, topBar.y - 3, topBar.width + 6, topBar.height + 3);
+  ctx.lineWidth = topBarBorder;
+  ctx.fillRect(topBar.x - topBarBorder, topBar.y - topBarBorder, topBar.width + topBarBorder * 2, topBar.height + topBarBorder);
+  ctx.strokeRect(topBar.x - topBarBorder, topBar.y - topBarBorder, topBar.width + topBarBorder * 2, topBar.height + topBarBorder);
 
   drawCounterFrame(ctx, layout.leftCounter);
   drawCounterFrame(ctx, layout.rightCounter);
@@ -466,19 +453,22 @@ export function renderFrame(
   drawFace(ctx, state.status, layout.face.x, layout.face.y, layout.face.size, options.facePressed ?? false);
 
   // board base
-  ctx.fillStyle = '#7a7a7a';
-  ctx.fillRect(board.x - 4, board.y - 4, board.width + 8, board.height + 8);
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(board.x - 4, board.y - 4, board.width + 8, board.height + 8);
-  ctx.strokeStyle = '#4f4f4f';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(board.x - 3, board.y - 3, board.width + 6, board.height + 6);
-
-  ctx.fillStyle = '#a9a9a9';
-  ctx.fillRect(board.x - 2, board.y - 2, board.width + 4, board.height + 4);
-  ctx.strokeStyle = '#5d5d5d';
-  ctx.strokeRect(board.x - 2, board.y - 2, board.width + 4, board.height + 4);
+  const boardOuterX = Math.floor(board.x);
+  const boardOuterY = Math.floor(board.y);
+  const boardOuterW = Math.floor(board.width);
+  const boardOuterH = Math.floor(board.height);
+  const boardX0 = boardOuterX - innerContentBorder;
+  const boardY0 = boardOuterY - innerContentBorder;
+  const boardW = boardOuterW + innerContentBorder * 2;
+  const boardH = boardOuterH + innerContentBorder * 2;
+  ctx.fillStyle = '#c0c0c0';
+  ctx.fillRect(boardX0, boardY0, boardW, boardH);
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(boardX0, boardY0, boardW, innerContentBorder);
+  ctx.fillRect(boardX0, boardY0, innerContentBorder, boardH);
+  ctx.fillStyle = '#f5f5f5';
+  ctx.fillRect(boardX0 + boardW - innerContentBorder, boardY0, innerContentBorder, boardH);
+  ctx.fillRect(boardX0, boardY0 + boardH - innerContentBorder, boardW, innerContentBorder);
 
   for (let row = 0; row < state.rows; row += 1) {
     for (let column = 0; column < state.columns; column += 1) {
