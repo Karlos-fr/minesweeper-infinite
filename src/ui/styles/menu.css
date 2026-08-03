@@ -38,7 +38,7 @@
 
 .ms-menu__panel {
   position: absolute;
-  min-width: 190px;
+  min-width: 0;
   width: 100%;
   background: #fff;
   border: 1px solid #808080;

@@ -56,7 +56,6 @@ export function createMinesweeperMenu(
 
   const menu = document.createElement('div');
   menu.className = 'ms-menu';
-  menu.style.width = '190px';
   menu.style.left = '0px';
   menu.style.top = '0px';
 
@@ -223,15 +222,14 @@ export function createMinesweeperMenu(
   };
 
   const setLayout = (layout: BoardLayout): void => {
-    const width = Math.max(190, Math.round(layout.topBar.width));
+    const width = Math.max(1, Math.round(layout.topBar.width));
     const left = Math.max(0, Math.round(layout.topBar.x));
-    const menuBarHeight = Math.max(1, Math.round(layout.topBar.height));
-    const scale = Math.max(0.8, Math.min(1.8, menuBarHeight / 20));
+    const menuBarHeight = 20;
 
     menu.style.left = `${left}px`;
     menu.style.top = `${Math.max(0, Math.round(layout.topBar.y))}px`;
     menu.style.width = `${width}px`;
-    menu.style.setProperty('--ms-scale', String(scale));
+    menu.style.setProperty('--ms-scale', '1');
 
     topBar.style.width = `${width}px`;
     topBar.style.height = `${menuBarHeight}px`;

@@ -53,8 +53,8 @@ export function computeAdaptiveBoardLayout(
   options: LayoutOptions = {},
 ): BoardLayout {
   const {
-    minCellSize = 16,
-    maxCellSize = 64,
+    minCellSize = 8,
+    maxCellSize = 16,
     chromeHeight = 28,
     padding = 12,
   } = options;
@@ -68,10 +68,9 @@ export function computeAdaptiveBoardLayout(
     minCellSize,
     maxCellSize,
   );
-  let topBarHeight = Math.max(Math.round(cellSize * 2.3), 44);
+  const topBarHeight = 34;
   while (cellSize > minCellSize && rows * cellSize + topBarHeight > availableHeight) {
     cellSize -= 1;
-    topBarHeight = Math.max(Math.round(cellSize * 2.3), 44);
   }
 
   const boardWidth = columns * cellSize;

@@ -13,7 +13,7 @@ const DEFAULT_FULLSCREEN_LAYOUT_OPTIONS: Required<Omit<FullscreenLayoutOptions, 
 } = {
   uiChromePx: 14,
   minCellSize: 8,
-  maxCellSize: 64,
+  maxCellSize: 16,
   padding: 6,
 };
 
