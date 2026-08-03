@@ -73,6 +73,14 @@ export function bindCanvasInput(
     mode: null,
     index: -1,
   };
+  const LONG_PRESS_DELAY_MS = 550;
+  const TOUCH_MOVE_CANCEL_PX = 10;
+  let longPressTimer: number | undefined;
+  let longPressIndex = -1;
+  let longPressTriggered = false;
+  let longPressPointerId = -1;
+  let pressX = 0;
+  let pressY = 0;
 
   const updatePreview = (nextIndex: number, nextMode: PreviewMode): void => {
     if (nextIndex < 0 || nextMode === null) {
@@ -96,11 +104,20 @@ export function bindCanvasInput(
     const layout = getLayout();
     event.preventDefault();
     const targetCanvas = event.currentTarget as HTMLCanvasElement;
+    longPressIndex = -1;
+    longPressTriggered = false;
+    longPressPointerId = event.pointerId;
+    pressX = event.clientX;
+    pressY = event.clientY;
 
     if (isFacePoint(event.clientX, event.clientY, targetCanvas, layout)) {
       state.mode = null;
       state.index = -1;
       callbacks.onFacePress(true);
+      if (longPressTimer !== undefined) {
+        window.clearTimeout(longPressTimer);
+        longPressTimer = undefined;
+      }
       return;
     }
 
@@ -108,8 +125,14 @@ export function bindCanvasInput(
     if (index < 0) {
       state.index = -1;
       callbacks.onPreviewClear();
+      if (longPressTimer !== undefined) {
+        window.clearTimeout(longPressTimer);
+        longPressTimer = undefined;
+      }
       return;
     }
+
+    longPressIndex = index;
 
     if (event.button === 2) {
       callbacks.onFlagCell(index);
@@ -119,11 +142,34 @@ export function bindCanvasInput(
 
     const actionMode: PreviewMode = event.buttons === 3 ? 'multi' : 'single';
     updatePreview(index, actionMode);
+
+    if (event.pointerType === 'touch') {
+      longPressTimer = window.setTimeout(() => {
+        if (longPressIndex === index) {
+          callbacks.onFlagCell(index);
+          longPressTriggered = true;
+          callbacks.onPreviewClear();
+          state.mode = null;
+          state.index = -1;
+        }
+        longPressTimer = undefined;
+      }, LONG_PRESS_DELAY_MS);
+    }
   };
 
   const handlePointerMove = (event: PointerEvent): void => {
+    if (event.pointerId !== longPressPointerId) return;
     const layout = getLayout();
     const targetCanvas = event.currentTarget as HTMLCanvasElement;
+
+    if (longPressTimer !== undefined) {
+      const moveDistanceX = Math.abs(event.clientX - pressX);
+      const moveDistanceY = Math.abs(event.clientY - pressY);
+      if (moveDistanceX > TOUCH_MOVE_CANCEL_PX || moveDistanceY > TOUCH_MOVE_CANCEL_PX) {
+        window.clearTimeout(longPressTimer);
+        longPressTimer = undefined;
+      }
+    }
 
     if (state.mode === null) {
       return;
@@ -141,8 +187,14 @@ export function bindCanvasInput(
   };
 
   const handlePointerUp = (event: PointerEvent): void => {
+    if (event.pointerId !== longPressPointerId) return;
     const layout = getLayout();
     const targetCanvas = event.currentTarget as HTMLCanvasElement;
+
+    if (longPressTimer !== undefined) {
+      window.clearTimeout(longPressTimer);
+      longPressTimer = undefined;
+    }
 
     if (isFacePoint(event.clientX, event.clientY, targetCanvas, layout)) {
       callbacks.onFacePress(false);
@@ -150,6 +202,14 @@ export function bindCanvasInput(
       callbacks.onPreviewClear();
       state.mode = null;
       state.index = -1;
+      longPressTriggered = false;
+      longPressPointerId = -1;
+      return;
+    }
+
+    if (longPressTriggered) {
+      longPressTriggered = false;
+      longPressPointerId = -1;
       return;
     }
 
@@ -168,6 +228,8 @@ export function bindCanvasInput(
     callbacks.onPreviewClear();
     state.mode = null;
     state.index = -1;
+    longPressPointerId = -1;
+    longPressIndex = -1;
   };
 
   const handleContextMenu = (event: MouseEvent): void => {
@@ -179,6 +241,13 @@ export function bindCanvasInput(
     callbacks.onPreviewClear();
     state.mode = null;
     state.index = -1;
+    if (longPressTimer !== undefined) {
+      window.clearTimeout(longPressTimer);
+      longPressTimer = undefined;
+    }
+    longPressTriggered = false;
+    longPressPointerId = -1;
+    longPressIndex = -1;
   };
 
   canvas.addEventListener('pointerdown', handlePointerDown, { passive: false });
