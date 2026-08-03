@@ -116,16 +116,16 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
 ## Phase 4 — Fonction "grille en plein espace disponible" (exigence spéciale)
 
 ### Tâche 4.1 — Module de calcul d’adaptation
-- [ ] `src/app/fullscreenLayout.ts`
+- [x] `src/app/fullscreenLayout.ts`
   - `computeAdaptiveBoardLayout(viewport, rows, cols, uiChromePx): BoardLayout`
 
 ### Tâche 4.2 — Entrée publique du jeu
-- [ ] `src/app/usePlayableGrid.ts`
+- [x] `src/app/usePlayableGrid.ts`
   - Exporter `createPlayableFullScreenGrid(root, difficulty?, options?)`
   - `resize` listener auto + recalcul layout
 
 ### Tâche 4.3 — Intégration runtime
-- [ ] `src/app/fullscreenHost.ts`
+- [x] `src/app/fullscreenHost.ts`
   - Démarrage du gameplay dans la zone disponible (`100vw`/`100vh`)
   - Gestion des marges et centrage
 

@@ -3,6 +3,7 @@ export interface CanvasHost {
   ctx: CanvasRenderingContext2D;
   width: number;
   height: number;
+  dispose?: () => void;
 }
 
 export function bootstrap(root: HTMLElement): CanvasHost {
@@ -25,27 +26,34 @@ export function bootstrap(root: HTMLElement): CanvasHost {
   container.appendChild(canvas);
 
   const resizeCanvas = (): void => {
-    const { innerWidth, innerHeight } = window;
+    const width = Math.max(1, container.clientWidth || window.innerWidth);
+    const height = Math.max(1, container.clientHeight || window.innerHeight);
     const dpr = window.devicePixelRatio || 1;
 
-    canvas.width = Math.floor(innerWidth * dpr);
-    canvas.height = Math.floor(innerHeight * dpr);
-    canvas.style.width = `${innerWidth}px`;
-    canvas.style.height = `${innerHeight}px`;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = 'rgb(22, 22, 22)';
-    ctx.fillRect(0, 0, innerWidth, innerHeight);
+    ctx.fillRect(0, 0, width, height);
   };
 
+  const observer = new ResizeObserver(resizeCanvas);
+  observer.observe(container);
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
   return {
     canvas,
     ctx,
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: canvas.width,
+    height: canvas.height,
+    dispose: () => {
+      observer.disconnect();
+      window.removeEventListener('resize', resizeCanvas);
+    },
   };
 }

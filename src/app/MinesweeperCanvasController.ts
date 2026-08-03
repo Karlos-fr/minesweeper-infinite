@@ -1,6 +1,7 @@
 import type { Difficulty } from '../core/types';
+import { computeAdaptiveBoardLayout } from './fullscreenLayout';
+import { type BoardLayout } from '../canvas/layout';
 import { renderFrame } from '../canvas/renderer';
-import { computeAdaptiveBoardLayout, type BoardLayout } from '../canvas/layout';
 import { bindCanvasInput } from '../canvas/input';
 import { createGameStateStore } from '../core/engine/useGameState';
 import type { CanvasHost } from './bootstrap';
@@ -11,18 +12,42 @@ export interface MinesweeperCanvasController {
   setDifficulty: (difficulty: Difficulty) => void;
 }
 
+const DEFAULT_LAYOUT_OPTIONS = {
+  uiChromePx: 120,
+  minCellSize: 16,
+  maxCellSize: 48,
+  padding: 6,
+};
+
+export interface CanvasControllerLayoutOptions {
+  readonly uiChromePx?: number;
+  readonly minCellSize?: number;
+  readonly maxCellSize?: number;
+  readonly padding?: number;
+}
+
+export interface MinesweeperCanvasControllerOptions {
+  difficulty: Difficulty;
+  layout?: CanvasControllerLayoutOptions;
+}
+
 export function createMinesweeperCanvasController(
   host: CanvasHost,
-  options: { difficulty: Difficulty } = { difficulty: 'Beginner' },
+  options: MinesweeperCanvasControllerOptions = { difficulty: 'Beginner' },
 ): MinesweeperCanvasController {
   const store = createGameStateStore(options.difficulty);
   const { canvas, ctx } = host;
+  const layoutOptions = {
+    ...DEFAULT_LAYOUT_OPTIONS,
+    ...options.layout,
+  };
 
   let layout: BoardLayout = computeAdaptiveBoardLayout(
     { width: host.canvas.clientWidth, height: host.canvas.clientHeight },
     store.getState().rows,
     store.getState().columns,
-    { padding: 6, chromeHeight: 120, maxCellSize: 48 },
+    layoutOptions.uiChromePx,
+    layoutOptions,
   );
 
   let facePressed = false;
@@ -54,7 +79,8 @@ export function createMinesweeperCanvasController(
       },
       state.rows,
       state.columns,
-      { padding: 6, chromeHeight: 120, maxCellSize: 48 },
+      layoutOptions.uiChromePx,
+      layoutOptions,
     );
     renderFrame(
       ctx,

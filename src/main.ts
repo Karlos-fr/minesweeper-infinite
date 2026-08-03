@@ -1,12 +1,10 @@
 import './ui/styles/global.css';
 import './ui/styles/canvas.css';
-import { bootstrap } from './app/bootstrap';
-import { createMinesweeperCanvasController } from './app/MinesweeperCanvasController';
+import { createPlayableFullScreenGrid } from './app/usePlayableGrid';
 
 const root = document.getElementById('root') ?? document.body;
-const host = bootstrap(root);
-const controller = createMinesweeperCanvasController(host, { difficulty: 'Beginner' });
+const game = createPlayableFullScreenGrid(root, 'Beginner');
 
 window.addEventListener('beforeunload', () => {
-  controller.dispose();
+  game.dispose();
 });
