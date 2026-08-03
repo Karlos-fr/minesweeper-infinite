@@ -63,12 +63,14 @@ export function computeAdaptiveBoardLayout(
   const reservedTop = Math.max(0, Math.round(chromeHeight));
 
   const availableHeight = Math.max(1, safeHeight - reservedTop);
+  const MENU_BAR_HEIGHT = 20;
+  const SCORE_BAR_HEIGHT = 34;
   let cellSize = clamp(
     Math.floor(Math.min(safeWidth / columns, availableHeight / rows)),
     minCellSize,
     maxCellSize,
   );
-  const topBarHeight = 34;
+  const topBarHeight = MENU_BAR_HEIGHT + SCORE_BAR_HEIGHT;
   while (cellSize > minCellSize && rows * cellSize + topBarHeight > availableHeight) {
     cellSize -= 1;
   }
@@ -76,8 +78,8 @@ export function computeAdaptiveBoardLayout(
   const boardWidth = columns * cellSize;
   const boardHeight = rows * cellSize;
 
-  const faceSize = Math.max(24, Math.round(cellSize * 1.5));
-  const digitHeight = Math.max(Math.round(topBarHeight * 0.72), 18);
+  const faceSize = Math.max(16, Math.round(Math.min(cellSize * 1.5, SCORE_BAR_HEIGHT - 8)));
+  const digitHeight = Math.max(Math.round(SCORE_BAR_HEIGHT * 0.72), 18);
   const digitWidth = Math.round(digitHeight * 0.62);
   const counterWidth = digitWidth * 3 + 6;
   const totalHeight = topBarHeight + boardHeight;
@@ -105,18 +107,18 @@ export function computeAdaptiveBoardLayout(
     },
     face: {
       x: x + Math.floor((boardWidth - faceSize) / 2),
-      y: Math.round(y + (topBarHeight - faceSize) / 2),
+      y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - faceSize) / 2),
       size: faceSize,
     },
     leftCounter: {
       x: Math.max(x + Math.round(cellSize * 0.25), 0),
-      y: Math.round(y + (topBarHeight - digitHeight) / 2),
+      y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - digitHeight) / 2),
       width: counterWidth,
       height: digitHeight,
     },
     rightCounter: {
       x: Math.max(x + boardWidth - counterWidth - Math.round(cellSize * 0.25), 0),
-      y: Math.round(y + (topBarHeight - digitHeight) / 2),
+      y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - digitHeight) / 2),
       width: counterWidth,
       height: digitHeight,
     },
