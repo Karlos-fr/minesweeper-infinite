@@ -1,4 +1,4 @@
-# minesweeper-infinite
+# Minesweeper Infinite
 
 Clone de Minesweeper (inspiration Windows XP) en TypeScript + Canvas.
 

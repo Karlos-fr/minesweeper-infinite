@@ -4,6 +4,7 @@ import {
   createMinesweeperCanvasController,
   type CanvasControllerLayoutOptions,
 } from './MinesweeperCanvasController';
+import { createMinesweeperMenu } from './menu';
 import type { Difficulty } from '../core/types';
 import type { CanvasHost } from './bootstrap';
 
@@ -19,6 +20,7 @@ export function createPlayableFullScreenGrid(
   options: PlayableGridOptions = {},
 ): PlayableGridSession {
   const fullscreenHost = createFullscreenHost(root);
+  let activeDifficulty = difficulty;
   const controller = createMinesweeperCanvasController(
     fullscreenHost.host,
     {
@@ -27,14 +29,34 @@ export function createPlayableFullScreenGrid(
     },
   );
 
+  const menu = createMinesweeperMenu(
+    root,
+    {
+      onNewGame: () => {
+        controller.setDifficulty(activeDifficulty);
+      },
+      onChangeDifficulty: next => {
+        activeDifficulty = next;
+        controller.setDifficulty(next);
+        menu.setDifficulty(next);
+      },
+    },
+    {
+      initialDifficulty: difficulty,
+    },
+  );
+
   return {
     host: fullscreenHost.host,
     start: controller.start,
     setDifficulty: difficultyArg => {
+      activeDifficulty = difficultyArg;
       controller.setDifficulty(difficultyArg);
+      menu.setDifficulty(difficultyArg);
     },
     dispose: () => {
       controller.dispose();
+      menu.dispose();
       fullscreenHost.dispose();
     },
   };
