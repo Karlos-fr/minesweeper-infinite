@@ -13,21 +13,23 @@ const DEFAULT_FULLSCREEN_LAYOUT_OPTIONS: Required<Omit<FullscreenLayoutOptions, 
   uiChromePx: number;
 } = {
   uiChromePx: 14,
-  minCellSize: 8,
+  minCellSize: 16,
   maxCellSize: 16,
   padding: 6,
-  scale: 1,
+  scale: 2,
 };
 
 export function computeAdaptiveBoardLayout(
   viewport: LayoutViewport,
   rows: number,
   columns: number,
+  uiChromePx: number,
   options: FullscreenLayoutOptions = {},
 ): BoardLayout {
   const merged: Required<FullscreenLayoutOptions> = {
     ...DEFAULT_FULLSCREEN_LAYOUT_OPTIONS,
     ...options,
+    uiChromePx: typeof uiChromePx === 'number' ? uiChromePx : options.uiChromePx ?? DEFAULT_FULLSCREEN_LAYOUT_OPTIONS.uiChromePx,
   };
 
   const normalized: LayoutOptions = {

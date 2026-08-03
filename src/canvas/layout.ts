@@ -60,53 +60,40 @@ export function computeAdaptiveBoardLayout(
     padding = 12,
     scale = 1,
   } = options;
-
   const resolvedScale = Number.isFinite(scale as number) ? Math.max(0.5, scale as number) : 1;
+  const safeWidth = Math.max(1, Math.round(viewport.width - Math.round(padding * resolvedScale) * 2));
+  const safeHeight = Math.max(1, Math.round(viewport.height - Math.round(padding * resolvedScale) * 2));
+  const reservedTop = Math.max(0, Math.round(chromeHeight * resolvedScale));
+
+  const availableHeight = Math.max(1, safeHeight - reservedTop);
   const MENU_BAR_HEIGHT = Math.max(1, Math.round(20 * resolvedScale));
   const SCORE_BAR_HEIGHT = Math.max(1, Math.round(34 * resolvedScale));
-  const CONTENT_PADDING = Math.max(1, Math.round(5 * resolvedScale));
-  const INNER_BORDER = Math.max(1, Math.round(3 * resolvedScale));
-  const SCORE_GAP = Math.max(1, Math.round(5 * resolvedScale));
   const resolvedMinCellSize = Math.max(1, Math.round(minCellSize * resolvedScale));
   const resolvedMaxCellSize = Math.max(resolvedMinCellSize, Math.round(maxCellSize * resolvedScale));
-  const boardMargin = Math.max(0, Math.round(padding * resolvedScale));
-  const reservedChrome = Math.max(0, Math.round(chromeHeight * resolvedScale));
-  const safeWidth = Math.max(1, Math.round(viewport.width - boardMargin * 2));
-  const safeHeight = Math.max(
-    1,
-    Math.round(viewport.height - Math.max(boardMargin, reservedChrome) * 2),
-  );
-  const reservedVertical = MENU_BAR_HEIGHT + SCORE_BAR_HEIGHT + SCORE_GAP;
-  const availableHeight = Math.max(1, safeHeight - reservedVertical);
-
   let cellSize = clamp(
     Math.floor(Math.min(safeWidth / columns, availableHeight / rows)),
     resolvedMinCellSize,
     resolvedMaxCellSize,
   );
-  while (cellSize > resolvedMinCellSize && rows * cellSize + reservedVertical > safeHeight) {
+  const topBarHeight = MENU_BAR_HEIGHT + SCORE_BAR_HEIGHT;
+  while (cellSize > resolvedMinCellSize && rows * cellSize + topBarHeight > availableHeight) {
     cellSize -= 1;
   }
 
   const boardWidth = columns * cellSize;
   const boardHeight = rows * cellSize;
-  const scoreBarWidth = boardWidth + INNER_BORDER * 2;
-  const contentHeight = boardHeight + INNER_BORDER * 2;
-  const totalHeight = MENU_BAR_HEIGHT + SCORE_BAR_HEIGHT + SCORE_GAP + contentHeight;
-  const topBarHeight = Math.max(1, MENU_BAR_HEIGHT);
 
   const scoreBarPaddingX = Math.max(1, Math.round(4 * resolvedScale));
   const scoreBarPaddingRight = Math.max(1, Math.round(7 * resolvedScale));
-  const counterHeight = Math.max(1, Math.round(SCORE_BAR_HEIGHT - 8 * resolvedScale));
+  const counterHeight = Math.max(1, SCORE_BAR_HEIGHT - 2 * Math.round(2 * resolvedScale) - 2 * Math.round(3 * resolvedScale));
   const counterWidth = Math.max(1, Math.round(40 * resolvedScale));
   const faceSize = Math.max(
-    Math.round(24 * resolvedScale),
+    Math.round(16 * resolvedScale),
     Math.round(Math.min(cellSize * 1.5, SCORE_BAR_HEIGHT - Math.round(8 * resolvedScale))),
   );
 
-  const x = Math.max(0, Math.round((viewport.width - scoreBarWidth) / 2));
-  const yCandidate = Math.max(0, Math.round((viewport.height - totalHeight) / 2));
-  const y = Math.max(0, Math.min(yCandidate, Math.max(0, viewport.height - totalHeight)));
+  const x = Math.max(0, Math.round((viewport.width - boardWidth) / 2));
+  const y = Math.max(0, Math.round(padding + reservedTop));
 
   return {
     rows,
@@ -116,18 +103,18 @@ export function computeAdaptiveBoardLayout(
     canvasHeight: viewport.height,
     board: {
       x,
-      y: y + topBarHeight + SCORE_BAR_HEIGHT,
+      y: y + topBarHeight,
       width: boardWidth,
       height: boardHeight,
     },
     topBar: {
       x,
       y,
-      width: scoreBarWidth,
+      width: boardWidth,
       height: topBarHeight,
     },
     face: {
-      x: x + Math.floor((scoreBarWidth - faceSize) / 2),
+      x: x + Math.floor((boardWidth - faceSize) / 2),
       y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - faceSize) / 2),
       size: faceSize,
     },
@@ -138,7 +125,7 @@ export function computeAdaptiveBoardLayout(
       height: counterHeight,
     },
     rightCounter: {
-      x: Math.max(x + scoreBarWidth - counterWidth - scoreBarPaddingRight, 0),
+      x: Math.max(x + boardWidth - counterWidth - scoreBarPaddingRight, 0),
       y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - counterHeight) / 2),
       width: counterWidth,
       height: counterHeight,

@@ -21,7 +21,7 @@ const DEFAULT_LAYOUT_OPTIONS = {
   minCellSize: 8,
   maxCellSize: 16,
   padding: 6,
-  scale: 1,
+  scale: 2,
 };
 
 export interface CanvasControllerLayoutOptions {
@@ -116,9 +116,10 @@ export function createMinesweeperCanvasController(
     { width: host.canvas.clientWidth, height: host.canvas.clientHeight },
     store.getState().rows,
     store.getState().columns,
+    Math.round(layoutOptions.uiChromePx * initialScale),
     {
       ...getResolvedLayoutOptions(host.canvas.clientWidth),
-      scale: initialScale,
+      uiChromePx: Math.round(layoutOptions.uiChromePx * initialScale),
     },
   );
 
@@ -210,9 +211,10 @@ export function createMinesweeperCanvasController(
       },
       state.rows,
       state.columns,
+      Math.round(layoutOptions.uiChromePx * resolvedScale),
       {
         ...dynamicLayoutOptions,
-        scale: resolvedScale,
+        uiChromePx: Math.round(layoutOptions.uiChromePx * resolvedScale),
       },
     );
     options.onLayoutChange?.(layout);
