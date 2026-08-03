@@ -17,12 +17,12 @@ Objectif : migrer `download/minesweeper-master` vers TypeScript avec une archite
 ## Phase 1 — Infrastructure TypeScript et base du projet
 
 ### Tâche 1.1 — Initialisation TS
-- [ ] Ajouter `tsconfig.json` (strict: true)
-- [ ] Basculer React scripts ou adapter la config build
+- [x] Ajouter `tsconfig.json` (strict: true)
+- [x] Basculer React scripts ou adapter la config build
   - Option A : CRA + TypeScript
-  - Option B : Vite + React + TS (choisir 1 seule)
-- [ ] Installer types (`typescript`, `@types/react`, `@types/react-dom`)
-- [ ] Mettre à jour les scripts (`start`, `build`, `serve`, `typecheck`)
+  - [x] Option B : Vite + React + TS (choisir 1 seule)
+- [x] Installer types (`typescript`, `@types/react`, `@types/react-dom`)
+- [x] Mettre à jour les scripts (`start`, `build`, `serve`, `typecheck`)
 
 ### Tâche 1.2 — Arborescence cible
 Créer la structure suivante (un fichier par unité fonctionnelle) :
@@ -34,15 +34,16 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
 - `src/ui/components/`
 - `src/ui/styles/`
 - `src/utils/`
+- [x] Arborescence de base créée
 
 ### Tâche 1.3 — Migration des assets
-- [ ] Copier `src/assets/*` vers `src/ui/assets/*`
-- [ ] Conserver les mêmes noms de fichiers au maximum pour réduire les écarts visuels
+- [x] Copier `src/assets/*` vers `src/ui/assets/*`
+- [x] Conserver les mêmes noms de fichiers au maximum pour réduire les écarts visuels
 
 ### Tâche 1.4 — Typage fondamental (fichiers modules dédiés)
-- [ ] `src/core/types.ts`
+- [x] `src/core/types.ts`
   - Types: `CellState`, `Difficulty`, `Cell`, `GameStatus`, `GameState`, `GameAction`
-- [ ] `src/core/config.ts`
+- [x] `src/core/config.ts`
   - Dériver de `Minesweeper/config.js`
 
 ---
