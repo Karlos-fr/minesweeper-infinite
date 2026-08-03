@@ -16,6 +16,8 @@ export interface BoardLayout {
   readonly rows: number;
   readonly columns: number;
   readonly cellSize: number;
+  readonly canvasWidth: number;
+  readonly canvasHeight: number;
   readonly board: BoardRect;
   readonly topBar: BoardRect;
   readonly face: {
@@ -88,6 +90,8 @@ export function computeAdaptiveBoardLayout(
     rows,
     columns,
     cellSize,
+    canvasWidth: viewport.width,
+    canvasHeight: viewport.height,
     board: {
       x,
       y: y + topBarHeight,

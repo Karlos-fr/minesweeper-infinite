@@ -29,6 +29,7 @@ export interface CanvasControllerLayoutOptions {
 export interface MinesweeperCanvasControllerOptions {
   difficulty: Difficulty;
   layout?: CanvasControllerLayoutOptions;
+  onLayoutChange?: (layout: BoardLayout) => void;
 }
 
 export function createMinesweeperCanvasController(
@@ -82,6 +83,7 @@ export function createMinesweeperCanvasController(
       layoutOptions.uiChromePx,
       layoutOptions,
     );
+    options.onLayoutChange?.(layout);
     renderFrame(
       ctx,
       canvas.clientWidth,

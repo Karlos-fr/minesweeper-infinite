@@ -1,4 +1,5 @@
 .ms-menu {
+  --ms-scale: 1;
   position: fixed;
   top: 0;
   left: 0;
@@ -11,7 +12,7 @@
 .ms-menu__topbar {
   display: flex;
   align-items: stretch;
-  height: 20px;
+  height: calc(20px * var(--ms-scale));
   background-color: #ece9d8;
   border-right: 1px solid #dfdfdf;
 }
@@ -20,12 +21,12 @@
   appearance: none;
   border: 0;
   margin: 0;
-  padding: 0 10px;
+  padding: 0 calc(10px * var(--ms-scale));
   height: 100%;
   background: transparent;
   color: #1f1f1f;
-  font-size: 11px;
-  line-height: 20px;
+  font-size: calc(11px * var(--ms-scale));
+  line-height: calc(20px * var(--ms-scale));
   cursor: default;
 }
 
@@ -38,22 +39,23 @@
 .ms-menu__panel {
   position: absolute;
   min-width: 190px;
+  width: 100%;
   background: #fff;
   border: 1px solid #808080;
   box-shadow: 2px 2px 1px rgba(0, 0, 0, 0.45);
-  padding: 2px;
+  padding: calc(2px * var(--ms-scale));
 }
 
 .ms-menu__row {
   width: 100%;
-  height: 20px;
-  padding: 0 6px;
+  height: calc(20px * var(--ms-scale));
+  padding: 0 calc(6px * var(--ms-scale));
   border: 0;
   background: #fff;
   display: block;
   text-align: left;
-  font-size: 11px;
-  line-height: 20px;
+  font-size: calc(11px * var(--ms-scale));
+  line-height: calc(20px * var(--ms-scale));
   color: #1f1f1f;
   cursor: default;
 }
@@ -69,11 +71,5 @@
 
 .ms-menu__separator {
   border-top: 1px solid #808080;
-  margin: 3px 1px;
-}
-
-@media (max-width: 640px) {
-  .ms-menu__topbar {
-    zoom: 0.95;
-  }
+  margin: calc(3px * var(--ms-scale)) calc(1px * var(--ms-scale));
 }

@@ -1,4 +1,5 @@
 import type { Difficulty } from '../core/types';
+import type { BoardLayout } from '../canvas/layout';
 
 interface MenuActions {
   readonly onNewGame: () => void;
@@ -29,6 +30,7 @@ export interface MenuSession {
   readonly setMarksEnabled: (enabled: boolean) => void;
   readonly setColorEnabled: (enabled: boolean) => void;
   readonly setSoundEnabled: (enabled: boolean) => void;
+  readonly setLayout: (layout: BoardLayout) => void;
 }
 
 const MENU_MARKS = {
@@ -54,6 +56,9 @@ export function createMinesweeperMenu(
 
   const menu = document.createElement('div');
   menu.className = 'ms-menu';
+  menu.style.width = '190px';
+  menu.style.left = '0px';
+  menu.style.top = '0px';
 
   const topBar = document.createElement('div');
   topBar.className = 'ms-menu__topbar';
@@ -76,7 +81,6 @@ export function createMinesweeperMenu(
 
   const helpPanel = document.createElement('div');
   helpPanel.className = 'ms-menu__panel ms-menu__panel--help';
-  helpPanel.style.left = '40px';
   helpPanel.style.top = '20px';
   helpPanel.style.display = 'none';
 
@@ -218,6 +222,29 @@ export function createMinesweeperMenu(
     soundRow.textContent = `${soundEnabled ? '✓' : '  '} Sound`;
   };
 
+  const setLayout = (layout: BoardLayout): void => {
+    const width = Math.max(190, Math.round(layout.topBar.width));
+    const left = Math.max(0, Math.round(layout.topBar.x));
+    const menuBarHeight = Math.max(20, Math.min(38, Math.round(layout.topBar.height * 0.45)));
+    const scale = Math.max(0.8, Math.min(1.8, menuBarHeight / 20));
+
+    menu.style.left = `${left}px`;
+    menu.style.top = `${Math.max(0, Math.round(layout.board.y - menuBarHeight))}px`;
+    menu.style.width = `${width}px`;
+    menu.style.setProperty('--ms-scale', String(scale));
+
+    topBar.style.width = `${width}px`;
+    topBar.style.height = `${menuBarHeight}px`;
+    gamePanel.style.width = `${width}px`;
+    gamePanel.style.minWidth = `${width}px`;
+    helpPanel.style.width = `${width}px`;
+    helpPanel.style.minWidth = `${width}px`;
+    gamePanel.style.left = '0px';
+    helpPanel.style.left = `${Math.max(0, Math.round(gameButton.offsetWidth))}px`;
+    gamePanel.style.top = `${menuBarHeight}px`;
+    helpPanel.style.top = `${menuBarHeight}px`;
+  };
+
   helpPanel.appendChild(helpRow1);
   helpPanel.appendChild(helpRow2);
   helpPanel.appendChild(helpRow3);
@@ -296,6 +323,7 @@ export function createMinesweeperMenu(
       actions.onToggleSound?.(enabled);
       syncState();
     },
+    setLayout,
     dispose: () => {
       document.removeEventListener('pointerdown', handleDocumentPointer, true);
       menu.remove();

@@ -21,15 +21,19 @@ export function createPlayableFullScreenGrid(
 ): PlayableGridSession {
   const fullscreenHost = createFullscreenHost(root);
   let activeDifficulty = difficulty;
+  let menu: ReturnType<typeof createMinesweeperMenu>;
   const controller = createMinesweeperCanvasController(
     fullscreenHost.host,
     {
       difficulty,
       layout: options,
+      onLayoutChange: nextLayout => {
+        menu?.setLayout(nextLayout);
+      },
     },
   );
 
-  const menu = createMinesweeperMenu(
+  menu = createMinesweeperMenu(
     root,
     {
       onNewGame: () => {
@@ -86,6 +90,8 @@ export function createPlayableFullScreenGrid(
       initialSoundEnabled: true,
     },
   );
+
+  controller.start();
 
   return {
     host: fullscreenHost.host,
