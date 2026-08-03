@@ -34,6 +34,8 @@ interface LoadedImages {
   [key: string]: HTMLImageElement;
 }
 
+type ImageReadyListener = () => void;
+
 const imageSources = {
   dead,
   smile,
@@ -66,17 +68,68 @@ const imageSources = {
   digitMinus,
 };
 
+const imageEntries = Object.entries(imageSources);
+const totalImageCount = imageEntries.length;
+const imageReadyListeners = new Set<ImageReadyListener>();
+let imagesAreReady = false;
+let imageLoadAttemptCount = 0;
+const imageLoadAttempts = new Set<string>();
+
+function markImageLoaded(key: string): void {
+  if (imageLoadAttempts.has(key)) {
+    return;
+  }
+  imageLoadAttempts.add(key);
+  imageLoadAttemptCount += 1;
+  notifyImageReady();
+}
+
+function notifyImageReady(): void {
+  if (imagesAreReady) return;
+
+  if (imageLoadAttemptCount >= totalImageCount) {
+    imagesAreReady = true;
+    imageReadyListeners.forEach(listener => listener());
+    imageReadyListeners.clear();
+  }
+}
+
 function loadImages(): LoadedImages {
   const loaded: LoadedImages = {};
-  Object.entries(imageSources).forEach(([key, source]) => {
+  imageEntries.forEach(([key, source]) => {
     const image = new Image();
+    image.onload = (): void => {
+      markImageLoaded(key);
+    };
+    image.onerror = (): void => {
+      markImageLoaded(key);
+    };
     image.src = source;
     loaded[key] = image;
+    if (image.complete) {
+      markImageLoaded(key);
+    }
   });
   return loaded;
 }
 
 const images = loadImages();
+
+export function onImagesLoaded(callback: ImageReadyListener): () => void {
+  if (imagesAreReady) {
+    callback();
+    return () => {
+      // no-op
+    };
+  }
+
+  imageReadyListeners.add(callback);
+  return () => {
+    imageReadyListeners.delete(callback);
+  };
+}
+
+notifyImageReady();
 
 function drawImageFrame(
   ctx: CanvasRenderingContext2D,
@@ -85,9 +138,32 @@ function drawImageFrame(
   y: number,
   width: number,
   height: number,
+  inset = 0,
 ): void {
   if (!image.complete) return;
-  ctx.drawImage(image, x, y, width, height);
+  const safeInset = Math.max(0, Math.floor(inset));
+  const targetX = x + safeInset;
+  const targetY = y + safeInset;
+  const targetWidth = Math.max(1, Math.floor(width - safeInset * 2));
+  const targetHeight = Math.max(1, Math.floor(height - safeInset * 2));
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, width, height);
+  ctx.clip();
+  ctx.drawImage(image, targetX, targetY, targetWidth, targetHeight);
+  ctx.restore();
+}
+
+function drawCellSprite(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  size: number,
+): void {
+  const inset = Math.min(1, Math.floor(size * 0.12));
+  drawImageFrame(ctx, image, x, y, size, size, inset);
 }
 
 function drawCellBackground(
@@ -277,22 +353,22 @@ function drawCeilContent(
 
   switch (ceilState) {
     case 'open':
-      drawImageFrame(ctx, getOpenSprite(minesAround), x, y, size, size);
+      drawCellSprite(ctx, getOpenSprite(minesAround), x, y, size);
       break;
     case 'flag':
-      drawImageFrame(ctx, images.flag, x, y, size, size);
+      drawCellSprite(ctx, images.flag, x, y, size);
       break;
     case 'unknown':
-      drawImageFrame(ctx, images.question, x, y, size, size);
+      drawCellSprite(ctx, images.question, x, y, size);
       break;
     case 'mine':
-      drawImageFrame(ctx, images.mine, x, y, size, size);
+      drawCellSprite(ctx, images.mine, x, y, size);
       break;
     case 'die':
-      drawImageFrame(ctx, images.mineDeath, x, y, size, size);
+      drawCellSprite(ctx, images.mineDeath, x, y, size);
       break;
     case 'misflagged':
-      drawImageFrame(ctx, images.misFlagged, x, y, size, size);
+      drawCellSprite(ctx, images.misFlagged, x, y, size);
       break;
     default:
       if (raised) {

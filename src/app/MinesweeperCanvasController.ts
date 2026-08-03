@@ -1,7 +1,7 @@
 import type { Difficulty } from '../core/types';
 import { computeAdaptiveBoardLayout } from './fullscreenLayout';
 import { type BoardLayout } from '../canvas/layout';
-import { renderFrame } from '../canvas/renderer';
+import { onImagesLoaded, renderFrame } from '../canvas/renderer';
 import { bindCanvasInput } from '../canvas/input';
 import { createGameStateStore } from '../core/engine/useGameState';
 import type { CanvasHost } from './bootstrap';
@@ -62,6 +62,7 @@ export function createMinesweeperCanvasController(
   let timerSeconds = 0;
   let timerInterval: number | undefined;
   let previousStatus = store.getState().status;
+  let unregisterImagesLoaded: () => void = () => {};
   let isFillToWindow = false;
   let fillConfig: FillToWindowConfig | null = null;
 
@@ -211,6 +212,7 @@ export function createMinesweeperCanvasController(
   }
 
   const unsubscribe = store.subscribe(onStoreUpdate);
+  unregisterImagesLoaded = onImagesLoaded(render);
 
   const onFacePress = (pressed: boolean): void => {
     facePressed = pressed;
@@ -294,6 +296,7 @@ export function createMinesweeperCanvasController(
     },
     dispose: () => {
       unsubscribe();
+      unregisterImagesLoaded();
       resizeObserver.disconnect();
       input.dispose();
       window.removeEventListener('resize', handleWindowResize);
