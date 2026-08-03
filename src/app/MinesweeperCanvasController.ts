@@ -93,29 +93,10 @@ export function createMinesweeperCanvasController(
     const minCellSize = Math.max(4, Math.round(layoutOptions.minCellSize));
     const maxCellSize = Math.max(minCellSize, Math.round(layoutOptions.maxCellSize));
 
-    let bestRows = Math.max(1, Math.floor(boardHeight / maxCellSize));
-    let bestColumns = Math.max(1, Math.floor(safeWidth / maxCellSize));
-    let bestCellSize = maxCellSize;
-    let bestArea = bestRows * bestColumns;
-
-    for (let cellSize = maxCellSize - 1; cellSize >= minCellSize; cellSize -= 1) {
-      const rows = Math.max(1, Math.floor(boardHeight / cellSize));
-      const columns = Math.max(1, Math.floor(safeWidth / cellSize));
-      const area = rows * columns;
-
-      if (area > bestArea) {
-        bestArea = area;
-        bestRows = rows;
-        bestColumns = columns;
-        bestCellSize = cellSize;
-      }
-
-      if (area === bestArea && cellSize > bestCellSize) {
-        bestRows = rows;
-        bestColumns = columns;
-        bestCellSize = cellSize;
-      }
-    }
+    const nativeFillCellSize = Math.max(minCellSize, Math.min(16, maxCellSize));
+    const bestCellSize = nativeFillCellSize;
+    const bestRows = Math.max(1, Math.floor(boardHeight / bestCellSize));
+    const bestColumns = Math.max(1, Math.floor(safeWidth / bestCellSize));
 
     const total = bestRows * bestColumns;
     const rawMines = Math.round(total * density);
