@@ -224,8 +224,8 @@ export function createMinesweeperMenu(
   const setLayout = (layout: BoardLayout): void => {
     const width = Math.max(1, Math.round(layout.topBar.width));
     const left = Math.max(0, Math.round(layout.topBar.x));
-    const menuBarHeight = 20;
     const scale = Math.max(1, Math.round(layout.cellSize / 16));
+    const menuBarHeight = Math.max(1, Math.round(20 * scale));
 
     menu.style.left = `${left}px`;
     menu.style.top = `${Math.max(0, Math.round(layout.topBar.y))}px`;
