@@ -63,7 +63,7 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
   - Port de la logique d’exploration aléatoire sans bordures
 - [x] `src/core/engine/minesCounter.ts`
   - Calcul des mines adjacentes par cellule
-- [ ] `src/core/engine/gridUtils.ts`
+- [x] `src/core/engine/gridUtils.ts`
   - Fonctions partagées de voisinage et d’échantillonnage
 
 ### Tâche 2.2 — Module logique d’ouverture/expansion
@@ -89,27 +89,27 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
 ## Phase 3 — Portage rendu Canvas et interactions
 
 ### Tâche 3.1 — Couche DOM → Canvas
-- [ ] `src/canvas/engine.ts`
+- [x] `src/canvas/engine.ts`
   - Types d’entrées (`MouseButton`, `PointerEventLike`)
   - Utilitaires de normalisation de coordonnées
 
 ### Tâche 3.2 — Moteur de rendu principal
-- [ ] `src/canvas/renderer.ts`
+- [x] `src/canvas/renderer.ts`
   - Dessin des cellules, chiffres, mines, drapeaux, états
-- [ ] `src/canvas/layout.ts`
+- [x] `src/canvas/layout.ts`
   - Mapping logique grille -> pixel (cellules, marges, scale)
 
 ### Tâche 3.3 — Contrôleur de vue canvas
-- [ ] `src/app/MinesweeperCanvasController.ts`
+- [x] `src/app/MinesweeperCanvasController.ts`
   - Lie état de jeu + moteur de rendu + événements
 
 ### Tâche 3.4 — Gestion des interactions
-- [ ] `src/canvas/input.ts`
-  - Clic gauche/droit, pressions prolongées, touch/multi-input
+- [x] `src/canvas/input.ts`
+  - Clic gauche/droit, pressions combinées, pointer events
 
 ### Tâche 3.5 — Styles DOM + canvas
-- [ ] `src/ui/styles/global.css` (globales layout)
-- [ ] `src/ui/styles/canvas.css` (variables, curseurs, anti-aliasing)
+- [x] `src/ui/styles/global.css` (globales layout)
+- [x] `src/ui/styles/canvas.css` (variables, curseur, anti-aliasing)
 
 ---
 
@@ -147,7 +147,7 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
   - Difficultés
   - Timer
   - États de fin de partie
-  - Marquage / doute / erreur de drapeau
+  - Marquage / doute / erreur de flag
   - Reset
 
 ### Tâche 5.3 — Qualité
