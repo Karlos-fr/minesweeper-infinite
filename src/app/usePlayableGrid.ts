@@ -71,7 +71,7 @@ export function createPlayableFullScreenGrid(
         alert('Minesweeper Infinite\nClone XP-like en TypeScript + Canvas.');
       },
       onGithub: () => {
-        window.open('https://github.com/ShizukuIchi/minesweeper', '_blank');
+        window.open('https://github.com/Karlos-fr/minesweeper-infinite', '_blank');
       },
       onExit: () => {
         if (window.confirm('Fermer le jeu ?')) {
