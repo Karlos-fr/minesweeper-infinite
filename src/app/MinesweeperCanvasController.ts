@@ -21,7 +21,7 @@ const DEFAULT_LAYOUT_OPTIONS = {
   minCellSize: 8,
   maxCellSize: 16,
   padding: 6,
-  scale: 1,
+  scale: 2,
 };
 
 export interface CanvasControllerLayoutOptions {
