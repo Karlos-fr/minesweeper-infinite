@@ -1,5 +1,5 @@
 import { Cell, Difficulty, DifficultyConfig, GameState } from '../types';
-import { CONFIG } from '../core/config';
+import { CONFIG } from '../config';
 
 export interface GameInitConfig {
   readonly difficulty: Difficulty;

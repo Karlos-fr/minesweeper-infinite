@@ -71,7 +71,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const target = state.ceils[index];
       if (!target) return state;
 
-      let newState = target.state;
+      let newState: Cell['state'];
       switch (target.state) {
         case 'cover':
           newState = 'flag';
@@ -83,7 +83,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           newState = 'cover';
           break;
         default:
-          throw new Error(`Unknown ceil state ${target.state}`);
+          return state;
       }
 
       const next = [...state.ceils];
@@ -100,7 +100,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'GAME_OVER': {
       const clickedIndex = action.payload.index;
-      const ceils = state.ceils.map(ceil => {
+      const ceils = state.ceils.map((ceil): Cell => {
         if (ceil.minesAround < 0 && ceil.state !== 'flag') {
           return {
             ...ceil,
@@ -138,16 +138,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'WON': {
-      const ceils = state.ceils.map(ceil =>
-        ceil.minesAround >= 0
-          ? {
-              ...ceil,
-              state: 'open',
-            }
-          : {
-              ...ceil,
-              state: 'flag',
-            },
+      const ceils = state.ceils.map(
+        (ceil): Cell =>
+          ceil.minesAround >= 0
+            ? {
+                ...ceil,
+                state: 'open',
+              }
+            : {
+                ...ceil,
+                state: 'flag',
+              },
       );
 
       return {

@@ -152,7 +152,7 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
   - Reset
 
 ### Tâche 5.3 — Qualité
-- [ ] `typecheck`
+- [x] `typecheck`
 - [x] Retirer le code JS non utilisé (sauf assets)
 
 ---

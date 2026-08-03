@@ -1,8 +1,6 @@
-import { CONFIG } from './config';
-
 export type CellState = 'cover' | 'flag' | 'unknown' | 'open' | 'die' | 'misflagged' | 'mine';
 
-export type Difficulty = keyof typeof CONFIG;
+export type Difficulty = 'Beginner' | 'Intermediate' | 'Expert';
 
 export interface Cell {
   readonly state: CellState;
