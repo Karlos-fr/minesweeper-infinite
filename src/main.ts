@@ -1,9 +1,8 @@
 import './ui/styles/global.css';
 import './ui/styles/canvas.css';
-import { createPlayableFullScreenGrid } from './app/usePlayableGrid';
+import { initializeMinesweeperApp } from './app/initialize';
 
-const root = document.getElementById('root') ?? document.body;
-const game = createPlayableFullScreenGrid(root, 'Beginner');
+const game = initializeMinesweeperApp();
 
 window.addEventListener('beforeunload', () => {
   game.dispose();

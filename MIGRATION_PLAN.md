@@ -140,11 +140,11 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
 
 ### Tâche 5.1 — Wiring final
 - [x] `src/main.ts` en entrée
-- [ ] `src/app/initialize.ts` (orchestration complète quand le moteur est prêt)
+- [x] `src/app/initialize.ts` (orchestration complète quand le moteur est prêt)
 - [ ] Service worker / offline: selon cible
 
 ### Tâche 5.2 — Contrôle de compatibilité “full iso”
-- [ ] Comparatif fonctionnalités avec version JS
+- [x] Comparatif fonctionnalités avec version JS
   - Difficultés
   - Timer
   - États de fin de partie
@@ -153,7 +153,7 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
 
 ### Tâche 5.3 — Qualité
 - [ ] `typecheck`
-- [ ] Retirer le code JS non utilisé (sauf assets)
+- [x] Retirer le code JS non utilisé (sauf assets)
 
 ---
 
