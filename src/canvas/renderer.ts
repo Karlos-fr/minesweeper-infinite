@@ -292,7 +292,7 @@ function drawCounterFrame(
   const h = Math.max(1, Math.floor(rect.height));
   const scale = Math.max(1, Math.round(w / 40));
 
-  ctx.fillStyle = '#c0c0c0';
+  ctx.fillStyle = '#ece9d8';
   ctx.fillRect(x, y, w, h);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(x + w - scale, y, scale, h);
@@ -311,7 +311,7 @@ function drawFace(
   const isWon = status === 'won';
   const src = isDead ? images.dead : isWon ? images.win : pressing ? images.ohh : images.smile;
   const scale = Math.max(1, Math.round(size / 16));
-  const border = Math.max(1, Math.round(1 * scale));
+  const border = Math.max(1, Math.round(2 * scale));
 
   ctx.fillStyle = '#c0c0c0';
   ctx.fillRect(x, y, size, size);
