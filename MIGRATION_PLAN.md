@@ -57,25 +57,27 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
 ## Phase 2 — Portage du moteur de jeu (isomorphique)
 
 ### Tâche 2.1 — Module de génération
-- [ ] `src/core/engine/gridFactory.ts`
+- [x] `src/core/engine/gridFactory.ts`
   - Générer la grille plate (`rows * columns`) et initialiser `cover`
-- [ ] `src/core/engine/minePlacer.ts`
+- [x] `src/core/engine/minePlacer.ts`
   - Port de la logique d’exploration aléatoire sans bordures
-- [ ] `src/core/engine/minesCounter.ts`
+- [x] `src/core/engine/minesCounter.ts`
   - Calcul des mines adjacentes par cellule
+- [ ] `src/core/engine/gridUtils.ts`
+  - Fonctions partagées de voisinage et d’échantillonnage
 
 ### Tâche 2.2 — Module logique d’ouverture/expansion
-- [ ] `src/core/engine/opening.ts`
+- [x] `src/core/engine/opening.ts`
   - `openCell`, `openAdjacentZeros` (BFS/DFS)
   - Gestion `misflagged`, `die`, `won`
-- [ ] `src/core/engine/validator.ts`
+- [x] `src/core/engine/validator.ts`
   - Conditions de victoire, de défaite, garde-fous de clics invalides
 
 ### Tâche 2.3 — State machine de jeu
-- [ ] `src/core/engine/gameReducer.ts`
+- [x] `src/core/engine/gameReducer.ts`
   - Actions: `START`, `OPEN`, `FLAG`, `UNFLAG`, `RESET`, `SET_DIFFICULTY`
   - Timer start/stop, état de partie, compteurs
-- [ ] `src/core/engine/useGameState.ts`
+- [x] `src/core/engine/useGameState.ts`
   - Service d’état + transitions
 
 ### Tâche 2.4 — Vérification iso-logiciel
