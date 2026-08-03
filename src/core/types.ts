@@ -21,8 +21,11 @@ export interface GameState {
 
 export interface ClearMapAction {
   readonly type: 'CLEAR_MAP';
-  readonly payload: {
+  readonly payload?: {
     readonly difficulty?: Difficulty;
+    readonly rows?: number;
+    readonly columns?: number;
+    readonly mines?: number;
   };
 }
 

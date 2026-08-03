@@ -13,7 +13,12 @@ export interface GameStateStore {
   open: (index: number) => void;
   openNeighbours: (index: number) => void;
   toggleFlag: (index: number) => void;
-  reset: (difficulty: Difficulty) => void;
+  reset: (config?: {
+    readonly difficulty?: Difficulty;
+    readonly rows?: number;
+    readonly columns?: number;
+    readonly mines?: number;
+  }) => void;
   setDifficulty: (difficulty: Difficulty) => void;
   subscribe: (listener: GameStateListener) => () => void;
 }
@@ -101,8 +106,18 @@ export function createGameStateStore(difficulty: Difficulty = 'Beginner'): GameS
     open,
     openNeighbours,
     toggleFlag,
-    reset: (nextDifficulty: Difficulty) => {
-      apply({ type: 'CLEAR_MAP', payload: { difficulty: nextDifficulty } });
+    reset: (config?: {
+      readonly difficulty?: Difficulty;
+      readonly rows?: number;
+      readonly columns?: number;
+      readonly mines?: number;
+    }) => {
+      if (config) {
+        apply({ type: 'CLEAR_MAP', payload: config });
+        return;
+      }
+
+      apply({ type: 'CLEAR_MAP' });
     },
     setDifficulty: (nextDifficulty: Difficulty) => {
       apply({ type: 'SET_DIFFICULTY', payload: { difficulty: nextDifficulty } });

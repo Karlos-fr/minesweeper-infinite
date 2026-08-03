@@ -155,7 +155,7 @@ export function createMinesweeperMenu(
   gamePanel.appendChild(expertRow);
   gamePanel.appendChild(separator1.cloneNode(true));
 
-  const customRow = createRow('Custom...', () => {
+  const customRow = createRow('Fit to window', () => {
     actions.onCustomDifficulty?.();
     setOpened(null);
   });

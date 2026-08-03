@@ -14,6 +14,8 @@ export interface PlayableGridSession extends MinesweeperCanvasController {
   readonly host: CanvasHost;
 }
 
+type ActiveMode = 'difficulty' | 'fillToWindow';
+
 export function createPlayableFullScreenGrid(
   root: HTMLElement,
   difficulty: Difficulty = 'Beginner',
@@ -21,6 +23,7 @@ export function createPlayableFullScreenGrid(
 ): PlayableGridSession {
   const fullscreenHost = createFullscreenHost(root);
   let activeDifficulty = difficulty;
+  let activeMode: ActiveMode = 'difficulty';
   let menu: ReturnType<typeof createMinesweeperMenu>;
   const controller = createMinesweeperCanvasController(
     fullscreenHost.host,
@@ -37,18 +40,21 @@ export function createPlayableFullScreenGrid(
     root,
     {
       onNewGame: () => {
-        controller.setDifficulty(activeDifficulty);
+        if (activeMode === 'fillToWindow') {
+          controller.setFillToWindow();
+        } else {
+          controller.setDifficulty(activeDifficulty);
+        }
       },
       onChangeDifficulty: next => {
+        activeMode = 'difficulty';
         activeDifficulty = next;
         controller.setDifficulty(next);
         menu.setDifficulty(next);
       },
       onCustomDifficulty: () => {
-        alert(
-          'Custom mode is not implemented in this build.\n\n'
-            + 'Use Beginner / Intermediate / Expert to set a preset grid.',
-        );
+        activeMode = 'fillToWindow';
+        controller.setFillToWindow();
       },
       onToggleMarks: () => {
         return;
@@ -97,6 +103,7 @@ export function createPlayableFullScreenGrid(
     host: fullscreenHost.host,
     start: controller.start,
     setDifficulty: difficultyArg => {
+      activeMode = 'difficulty';
       activeDifficulty = difficultyArg;
       controller.setDifficulty(difficultyArg);
       menu.setDifficulty(difficultyArg);

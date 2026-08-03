@@ -1,9 +1,16 @@
 import { Cell, Difficulty, GameAction, GameState } from '../types';
 import { getDifficultyConfig } from './gridFactory';
-import { createInitialGameState } from './gridFactory';
+import { createEmptyGrid, createInitialGameState } from './gridFactory';
 import { getAutoOpenIndexes } from './opening';
 import { placeMines } from './minePlacer';
 import { getNeighborIndexes } from './gridUtils';
+
+interface ClearMapPayload {
+  readonly difficulty?: Difficulty;
+  readonly rows?: number;
+  readonly columns?: number;
+  readonly mines?: number;
+}
 
 function replaceCeils(
   ceils: readonly Cell[],
@@ -29,21 +36,81 @@ function resetToDifficulty(state: GameState, difficulty: Difficulty): GameState 
   };
 }
 
+function clampPositiveInteger(value: number, fallback: number): number {
+  const sanitized = Math.trunc(value);
+  if (!Number.isFinite(sanitized)) {
+    return fallback;
+  }
+  return Math.max(1, sanitized);
+}
+
+function clampMineCount(mines: number, total: number): number {
+  const maxMines = Math.max(0, total - 1);
+  const normalizedMines = clampPositiveInteger(mines, 0);
+  if (maxMines <= 0) {
+    return 0;
+  }
+  return Math.max(1, Math.min(normalizedMines, maxMines));
+}
+
+function resetToCustomConfig(state: GameState, payload?: ClearMapPayload): GameState {
+  if (
+    !payload ||
+    (payload.difficulty === undefined &&
+      payload.rows === undefined &&
+      payload.columns === undefined &&
+      payload.mines === undefined)
+  ) {
+    return {
+      ...state,
+      status: 'new',
+      ceils: createEmptyGrid(state.rows, state.columns),
+    };
+  }
+
+  if (
+    payload.difficulty !== undefined &&
+    payload.rows === undefined &&
+    payload.columns === undefined &&
+    payload.mines === undefined
+  ) {
+    return resetToDifficulty(state, payload.difficulty);
+  }
+
+  const rows = clampPositiveInteger(payload.rows ?? state.rows, state.rows);
+  const columns = clampPositiveInteger(payload.columns ?? state.columns, state.columns);
+  const total = rows * columns;
+  const mines = payload.mines === undefined
+    ? clampMineCount(state.mines, total)
+    : clampMineCount(payload.mines, total);
+
+  return {
+    ...state,
+    difficulty: payload.difficulty ?? state.difficulty,
+    status: 'new',
+    rows,
+    columns,
+    mines,
+    ceils: createEmptyGrid(rows, columns),
+  };
+}
+
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'CLEAR_MAP':
     case 'SET_DIFFICULTY': {
-      const difficulty = action.payload.difficulty || state.difficulty;
-      return resetToDifficulty(state, difficulty);
+      if (action.type === 'SET_DIFFICULTY') {
+        return resetToDifficulty(state, action.payload.difficulty);
+      }
+      return resetToCustomConfig(state, action.payload);
     }
 
     case 'START_GAME': {
       const { index } = action.payload;
-      const config = getDifficultyConfig(state.difficulty);
       const ceils = placeMines({
         rows: state.rows,
         columns: state.columns,
-        mines: config.mines,
+        mines: state.mines,
         exclude: index,
         ceils: state.ceils,
       });

@@ -10,6 +10,7 @@ export interface MinesweeperCanvasController {
   start: () => void;
   dispose: () => void;
   setDifficulty: (difficulty: Difficulty) => void;
+  setFillToWindow: () => void;
 }
 
 const DEFAULT_LAYOUT_OPTIONS = {
@@ -30,6 +31,12 @@ export interface MinesweeperCanvasControllerOptions {
   difficulty: Difficulty;
   layout?: CanvasControllerLayoutOptions;
   onLayoutChange?: (layout: BoardLayout) => void;
+}
+
+interface FillToWindowConfig {
+  rows: number;
+  columns: number;
+  mines: number;
 }
 
 export function createMinesweeperCanvasController(
@@ -55,6 +62,86 @@ export function createMinesweeperCanvasController(
   let timerSeconds = 0;
   let timerInterval: number | undefined;
   let previousStatus = store.getState().status;
+  let isFillToWindow = false;
+  let fillConfig: FillToWindowConfig | null = null;
+
+  const MENU_BAR_HEIGHT = 20;
+  const SCORE_BAR_HEIGHT = 34;
+
+  const getSafeViewport = (): { width: number; height: number } => ({
+    width: Math.max(1, canvas.clientWidth),
+    height: Math.max(1, canvas.clientHeight),
+  });
+
+  const getCellDensity = (state: ReturnType<typeof store.getState>): number => {
+    const total = Math.max(1, state.rows * state.columns);
+    const density = state.mines / total;
+    return density > 0 && density < 1 ? density : 0.156;
+  };
+
+  const computeFillConfig = (): FillToWindowConfig => {
+    const state = store.getState();
+    const density = getCellDensity(state);
+    const viewport = getSafeViewport();
+    const safeWidth = Math.max(1, Math.round(viewport.width - layoutOptions.padding * 2));
+    const safeHeight = Math.max(1, Math.round(viewport.height - layoutOptions.padding * 2));
+    const reservedTop = Math.max(0, Math.round(layoutOptions.uiChromePx));
+    const availableHeight = Math.max(1, safeHeight - reservedTop);
+    const boardHeight = Math.max(1, availableHeight - (MENU_BAR_HEIGHT + SCORE_BAR_HEIGHT));
+
+    const minCellSize = Math.max(4, Math.round(layoutOptions.minCellSize));
+    const maxCellSize = Math.max(minCellSize, Math.round(layoutOptions.maxCellSize));
+
+    let bestRows = Math.max(1, Math.floor(boardHeight / maxCellSize));
+    let bestColumns = Math.max(1, Math.floor(safeWidth / maxCellSize));
+    let bestCellSize = maxCellSize;
+    let bestArea = bestRows * bestColumns;
+
+    for (let cellSize = maxCellSize - 1; cellSize >= minCellSize; cellSize -= 1) {
+      const rows = Math.max(1, Math.floor(boardHeight / cellSize));
+      const columns = Math.max(1, Math.floor(safeWidth / cellSize));
+      const area = rows * columns;
+
+      if (area > bestArea) {
+        bestArea = area;
+        bestRows = rows;
+        bestColumns = columns;
+        bestCellSize = cellSize;
+      }
+
+      if (area === bestArea && cellSize > bestCellSize) {
+        bestRows = rows;
+        bestColumns = columns;
+        bestCellSize = cellSize;
+      }
+    }
+
+    const total = bestRows * bestColumns;
+    const rawMines = Math.round(total * density);
+    const maxMines = Math.max(0, total - 1);
+    const mines = total <= 1 ? 0 : Math.max(1, Math.min(rawMines, maxMines));
+
+    return {
+      rows: bestRows,
+      columns: bestColumns,
+      mines,
+    };
+  };
+
+  const applyFillToWindow = (force = false): void => {
+    if (!isFillToWindow) return;
+    const nextConfig = computeFillConfig();
+    if (
+      force ||
+      !fillConfig ||
+      fillConfig.rows !== nextConfig.rows ||
+      fillConfig.columns !== nextConfig.columns ||
+      fillConfig.mines !== nextConfig.mines
+    ) {
+      fillConfig = nextConfig;
+      store.reset(nextConfig);
+    }
+  };
 
   const stopTimer = (): void => {
     if (timerInterval !== undefined) {
@@ -154,7 +241,15 @@ export function createMinesweeperCanvasController(
       },
       onReset: () => {
         const current = store.getState();
-        store.reset(current.difficulty);
+        store.reset(
+          isFillToWindow
+            ? {
+                rows: current.rows,
+                columns: current.columns,
+                mines: current.mines,
+              }
+            : { difficulty: current.difficulty },
+        );
       },
       onFacePress,
     },
@@ -166,6 +261,9 @@ export function createMinesweeperCanvasController(
   resizeObserver.observe(canvas);
 
   const handleWindowResize = (): void => {
+    if (isFillToWindow) {
+      applyFillToWindow();
+    }
     render();
   };
 
@@ -178,10 +276,19 @@ export function createMinesweeperCanvasController(
       render();
     },
     setDifficulty: difficulty => {
+      isFillToWindow = false;
+      fillConfig = null;
       store.setDifficulty(difficulty);
       store.reset(difficulty);
       timerSeconds = 0;
       stopTimer();
+      previousStatus = store.getState().status;
+      render();
+    },
+    setFillToWindow: () => {
+      isFillToWindow = true;
+      applyFillToWindow(true);
+      timerSeconds = 0;
       previousStatus = store.getState().status;
       render();
     },
