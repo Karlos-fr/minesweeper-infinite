@@ -130,8 +130,9 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
   - Gestion des marges et centrage
 
 ### Tâche 4.4 — Validation visuelle spécifique
-- [ ] Tests de ratio sur 4 résolutions (desktop, petite fenêtre, mobile, full-screen)
-- [ ] Vérifier: aucune cellule tronquée, grille centrée, clics précis
+- [x] Tests de ratio sur 4 résolutions (desktop, petite fenêtre, mobile, full-screen)
+  - Résultat: passe sur 1920×1080 / 1024×600 / 390×844 / 1366×768
+- [x] Vérifier: aucune cellule tronquée, grille centrée, clics précis
 
 ---
 
