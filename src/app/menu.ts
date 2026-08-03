@@ -3,15 +3,32 @@ import type { Difficulty } from '../core/types';
 interface MenuActions {
   readonly onNewGame: () => void;
   readonly onChangeDifficulty: (difficulty: Difficulty) => void;
+  readonly onToggleMarks?: (enabled: boolean) => void;
+  readonly onToggleColor?: (enabled: boolean) => void;
+  readonly onToggleSound?: (enabled: boolean) => void;
+  readonly onCustomDifficulty?: () => void;
+  readonly onBestTimes?: () => void;
+  readonly onOpenContentsHelp?: () => void;
+  readonly onSearchHelp?: () => void;
+  readonly onUsingHelp?: () => void;
+  readonly onAbout?: () => void;
+  readonly onGithub?: () => void;
+  readonly onExit?: () => void;
 }
 
 interface MenuOptions {
   readonly initialDifficulty: Difficulty;
+  readonly initialMarksEnabled?: boolean;
+  readonly initialColorEnabled?: boolean;
+  readonly initialSoundEnabled?: boolean;
 }
 
 export interface MenuSession {
   readonly dispose: () => void;
   readonly setDifficulty: (difficulty: Difficulty) => void;
+  readonly setMarksEnabled: (enabled: boolean) => void;
+  readonly setColorEnabled: (enabled: boolean) => void;
+  readonly setSoundEnabled: (enabled: boolean) => void;
 }
 
 const MENU_MARKS = {
@@ -30,6 +47,9 @@ export function createMinesweeperMenu(
   options: MenuOptions,
 ): MenuSession {
   let currentDifficulty = options.initialDifficulty;
+  let marksEnabled = options.initialMarksEnabled ?? true;
+  let colorEnabled = options.initialColorEnabled ?? false;
+  let soundEnabled = options.initialSoundEnabled ?? true;
   let openedMenu: 'game' | 'help' | null = null;
 
   const menu = document.createElement('div');
@@ -85,6 +105,22 @@ export function createMinesweeperMenu(
     return row;
   };
 
+  const createToggleRow = (
+    label: string,
+    checked: boolean,
+    action: (next: boolean) => void,
+  ): HTMLButtonElement => {
+    const display = `${checked ? '✓' : '  '} ${label}`;
+    const row = createRow(display, () => {
+      const next = !checked;
+      checked = next;
+      action(next);
+      syncState();
+    });
+    row.dataset.toggle = label;
+    return row;
+  };
+
   const createDifficultyRow = (difficulty: Difficulty): HTMLButtonElement => {
     const row = createRow(
       difficulty === currentDifficulty
@@ -116,12 +152,35 @@ export function createMinesweeperMenu(
   gamePanel.appendChild(expertRow);
   gamePanel.appendChild(separator1.cloneNode(true));
 
-  const customRow = createRow('Custom...', undefined, true);
-  const marksRow = createRow('Marks (?)', undefined, true);
-  const colorRow = createRow('Color', undefined, true);
-  const soundRow = createRow('Sound', undefined, true);
-  const scoresRow = createRow('Best Times...', undefined, true);
-  const exitRow = createRow('Exit', undefined, true);
+  const customRow = createRow('Custom...', () => {
+    actions.onCustomDifficulty?.();
+    setOpened(null);
+  });
+
+  const marksRow = createToggleRow('Marks (?)', marksEnabled, next => {
+    marksEnabled = next;
+    actions.onToggleMarks?.(next);
+  });
+
+  const colorRow = createToggleRow('Color', colorEnabled, next => {
+    colorEnabled = next;
+    actions.onToggleColor?.(next);
+  });
+
+  const soundRow = createToggleRow('Sound', soundEnabled, next => {
+    soundEnabled = next;
+    actions.onToggleSound?.(next);
+  });
+
+  const scoresRow = createRow('Best Times...', () => {
+    actions.onBestTimes?.();
+    setOpened(null);
+  });
+
+  const exitRow = createRow('Exit', () => {
+    actions.onExit?.();
+    setOpened(null);
+  });
 
   [customRow, marksRow, colorRow, soundRow].forEach(row => gamePanel.appendChild(row));
   gamePanel.appendChild(document.createElement('div')).className = 'ms-menu__separator';
@@ -129,16 +188,35 @@ export function createMinesweeperMenu(
   gamePanel.appendChild(document.createElement('div')).className = 'ms-menu__separator';
   gamePanel.appendChild(exitRow);
 
-  const helpRow1 = createRow('Contents', undefined);
-  const helpRow2 = createRow('Search for Help on...', undefined);
-  const helpRow3 = createRow('Using Help', undefined);
+  const helpRow1 = createRow('Contents', () => {
+    actions.onOpenContentsHelp?.();
+    setOpened(null);
+  });
+  const helpRow2 = createRow('Search for Help on...', () => {
+    actions.onSearchHelp?.();
+    setOpened(null);
+  });
+  const helpRow3 = createRow('Using Help', () => {
+    actions.onUsingHelp?.();
+    setOpened(null);
+  });
   const helpSep1 = document.createElement('div');
   helpSep1.className = 'ms-menu__separator';
-  const helpRow4 = createRow('About Minesweeper...', undefined);
+  const helpRow4 = createRow('About Minesweeper...', () => {
+    actions.onAbout?.();
+    setOpened(null);
+  });
 
   const helpLink = createRow('Github', () => {
-    window.open('https://github.com/ShizukuIchi/minesweeper', '_blank');
+    actions.onGithub?.();
+    setOpened(null);
   }, false);
+
+  const syncState = (): void => {
+    marksRow.textContent = `${marksEnabled ? '✓' : '  '} Marks (?)`;
+    colorRow.textContent = `${colorEnabled ? '✓' : '  '} Color`;
+    soundRow.textContent = `${soundEnabled ? '✓' : '  '} Sound`;
+  };
 
   helpPanel.appendChild(helpRow1);
   helpPanel.appendChild(helpRow2);
@@ -193,6 +271,7 @@ export function createMinesweeperMenu(
       currentDifficulty === 'Expert'
         ? `✓ ${formatDifficultyLabel('Expert')}`
         : formatDifficultyLabel('Expert');
+    syncState();
   };
 
   syncDifficultyState();
@@ -201,6 +280,21 @@ export function createMinesweeperMenu(
     setDifficulty: difficulty => {
       currentDifficulty = difficulty;
       syncDifficultyState();
+    },
+    setMarksEnabled: enabled => {
+      marksEnabled = enabled;
+      actions.onToggleMarks?.(enabled);
+      syncState();
+    },
+    setColorEnabled: enabled => {
+      colorEnabled = enabled;
+      actions.onToggleColor?.(enabled);
+      syncState();
+    },
+    setSoundEnabled: enabled => {
+      soundEnabled = enabled;
+      actions.onToggleSound?.(enabled);
+      syncState();
     },
     dispose: () => {
       document.removeEventListener('pointerdown', handleDocumentPointer, true);

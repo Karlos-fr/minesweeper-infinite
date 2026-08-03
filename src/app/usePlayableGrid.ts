@@ -40,9 +40,50 @@ export function createPlayableFullScreenGrid(
         controller.setDifficulty(next);
         menu.setDifficulty(next);
       },
+      onCustomDifficulty: () => {
+        alert(
+          'Custom mode is not implemented in this build.\n\n'
+            + 'Use Beginner / Intermediate / Expert to set a preset grid.',
+        );
+      },
+      onToggleMarks: () => {
+        return;
+      },
+      onToggleColor: () => {
+        return;
+      },
+      onToggleSound: () => {
+        return;
+      },
+      onBestTimes: () => {
+        alert('Best times feature is not implemented yet.');
+      },
+      onOpenContentsHelp: () => {
+        window.open('https://support.microsoft.com/search/?query=minesweeper', '_blank');
+      },
+      onSearchHelp: () => {
+        window.open('https://www.bing.com/search?q=Windows+Minesweeper+help', '_blank');
+      },
+      onUsingHelp: () => {
+        window.open('https://www.google.com/search?q=minesweeper+help', '_blank');
+      },
+      onAbout: () => {
+        alert('Minesweeper Infinite\nClone XP-like en TypeScript + Canvas.');
+      },
+      onGithub: () => {
+        window.open('https://github.com/ShizukuIchi/minesweeper', '_blank');
+      },
+      onExit: () => {
+        if (window.confirm('Fermer le jeu ?')) {
+          window.close();
+        }
+      },
     },
     {
       initialDifficulty: difficulty,
+      initialMarksEnabled: true,
+      initialColorEnabled: false,
+      initialSoundEnabled: true,
     },
   );
 
