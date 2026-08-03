@@ -102,6 +102,10 @@ export function createPlayableFullScreenGrid(
   return {
     host: fullscreenHost.host,
     start: controller.start,
+    setFillToWindow: () => {
+      activeMode = 'fillToWindow';
+      controller.setFillToWindow();
+    },
     setDifficulty: difficultyArg => {
       activeMode = 'difficulty';
       activeDifficulty = difficultyArg;
