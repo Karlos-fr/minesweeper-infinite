@@ -207,7 +207,7 @@ export function createMinesweeperMenu(
     setOpened(null);
   });
 
-  const helpLink = createRow('Github', () => {
+  const helpLink = createRow('GitHub', () => {
     actions.onGithub?.();
     setOpened(null);
   }, false);
