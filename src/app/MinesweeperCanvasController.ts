@@ -83,15 +83,13 @@ export function createMinesweeperCanvasController(
 
   const MENU_BAR_HEIGHT = 20;
   const SCORE_BAR_HEIGHT = 34;
-  const MOBILE_SCALE_BREAKPOINT = 768;
-  const MOBILE_SCALE_FACTOR = 1.8;
 
   const getLayoutScale = (viewportWidth: number): number => {
     if (layoutOptions.scale !== undefined) {
       return layoutOptions.scale;
     }
 
-    return viewportWidth <= MOBILE_SCALE_BREAKPOINT ? MOBILE_SCALE_FACTOR : 1;
+    return 1;
   };
 
   const getResolvedLayoutOptions = (viewportWidth: number): Required<CanvasControllerLayoutOptions> & { scale: number } => ({
