@@ -6,6 +6,7 @@ export interface FullscreenLayoutOptions {
   readonly minCellSize?: number;
   readonly maxCellSize?: number;
   readonly padding?: number;
+  readonly scale?: number;
 }
 
 const DEFAULT_FULLSCREEN_LAYOUT_OPTIONS: Required<Omit<FullscreenLayoutOptions, 'uiChromePx'>> & {
@@ -15,6 +16,7 @@ const DEFAULT_FULLSCREEN_LAYOUT_OPTIONS: Required<Omit<FullscreenLayoutOptions, 
   minCellSize: 8,
   maxCellSize: 16,
   padding: 6,
+  scale: 1,
 };
 
 export function computeAdaptiveBoardLayout(
@@ -35,6 +37,7 @@ export function computeAdaptiveBoardLayout(
     maxCellSize: merged.maxCellSize,
     chromeHeight: merged.uiChromePx,
     padding: merged.padding,
+    scale: merged.scale,
   };
 
   return computeCanvasAdaptiveBoardLayout(viewport, rows, columns, normalized);

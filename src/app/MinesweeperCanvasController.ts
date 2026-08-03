@@ -18,6 +18,7 @@ const DEFAULT_LAYOUT_OPTIONS = {
   minCellSize: 8,
   maxCellSize: 16,
   padding: 6,
+  scale: 1,
 };
 
 export interface CanvasControllerLayoutOptions {
@@ -25,6 +26,7 @@ export interface CanvasControllerLayoutOptions {
   readonly minCellSize?: number;
   readonly maxCellSize?: number;
   readonly padding?: number;
+  readonly scale?: number;
 }
 
 export interface MinesweeperCanvasControllerOptions {
@@ -50,14 +52,6 @@ export function createMinesweeperCanvasController(
     ...options.layout,
   };
 
-  let layout: BoardLayout = computeAdaptiveBoardLayout(
-    { width: host.canvas.clientWidth, height: host.canvas.clientHeight },
-    store.getState().rows,
-    store.getState().columns,
-    layoutOptions.uiChromePx,
-    layoutOptions,
-  );
-
   let facePressed = false;
   let timerSeconds = 0;
   let timerInterval: number | undefined;
@@ -68,6 +62,24 @@ export function createMinesweeperCanvasController(
 
   const MENU_BAR_HEIGHT = 20;
   const SCORE_BAR_HEIGHT = 34;
+  const MOBILE_SCALE_BREAKPOINT = 768;
+  const MOBILE_SCALE_FACTOR = 1.8;
+
+  const getLayoutScale = (viewportWidth: number): number => {
+    if (layoutOptions.scale !== undefined) {
+      return layoutOptions.scale;
+    }
+
+    return viewportWidth <= MOBILE_SCALE_BREAKPOINT ? MOBILE_SCALE_FACTOR : 1;
+  };
+
+  const getResolvedLayoutOptions = (viewportWidth: number): Required<CanvasControllerLayoutOptions> & { scale: number } => ({
+    uiChromePx: Math.round(layoutOptions.uiChromePx),
+    minCellSize: layoutOptions.minCellSize,
+    maxCellSize: layoutOptions.maxCellSize,
+    padding: layoutOptions.padding,
+    scale: getLayoutScale(viewportWidth),
+  });
 
   const getSafeViewport = (): { width: number; height: number } => ({
     width: Math.max(1, canvas.clientWidth),
@@ -80,21 +92,36 @@ export function createMinesweeperCanvasController(
     return density > 0 && density < 1 ? density : 0.156;
   };
 
+  const initialScale = getLayoutScale(host.canvas.clientWidth);
+  let layout: BoardLayout = computeAdaptiveBoardLayout(
+    { width: host.canvas.clientWidth, height: host.canvas.clientHeight },
+    store.getState().rows,
+    store.getState().columns,
+    Math.round(layoutOptions.uiChromePx * initialScale),
+    {
+      ...getResolvedLayoutOptions(host.canvas.clientWidth),
+      uiChromePx: Math.round(layoutOptions.uiChromePx * initialScale),
+    },
+  );
+
   const computeFillConfig = (): FillToWindowConfig => {
     const state = store.getState();
     const density = getCellDensity(state);
     const viewport = getSafeViewport();
-    const safeWidth = Math.max(1, Math.round(viewport.width - layoutOptions.padding * 2));
-    const safeHeight = Math.max(1, Math.round(viewport.height - layoutOptions.padding * 2));
-    const reservedTop = Math.max(0, Math.round(layoutOptions.uiChromePx));
+    const resolvedScale = getLayoutScale(viewport.width);
+    const resolvedChromeHeight = Math.round(layoutOptions.uiChromePx * resolvedScale);
+    const resolvedMenuBarHeight = Math.max(1, Math.round(MENU_BAR_HEIGHT * resolvedScale));
+    const resolvedScoreBarHeight = Math.max(1, Math.round(SCORE_BAR_HEIGHT * resolvedScale));
+    const safeWidth = Math.max(1, Math.round(viewport.width - Math.round(layoutOptions.padding * resolvedScale) * 2));
+    const safeHeight = Math.max(1, Math.round(viewport.height - Math.round(layoutOptions.padding * resolvedScale) * 2));
+    const reservedTop = Math.max(0, resolvedChromeHeight);
     const availableHeight = Math.max(1, safeHeight - reservedTop);
-    const boardHeight = Math.max(1, availableHeight - (MENU_BAR_HEIGHT + SCORE_BAR_HEIGHT));
+    const boardHeight = Math.max(1, availableHeight - (resolvedMenuBarHeight + resolvedScoreBarHeight));
 
-    const minCellSize = Math.max(4, Math.round(layoutOptions.minCellSize));
-    const maxCellSize = Math.max(minCellSize, Math.round(layoutOptions.maxCellSize));
+    const minCellSize = Math.max(4, Math.round(layoutOptions.minCellSize * resolvedScale));
+    const maxCellSize = Math.max(minCellSize, Math.round(layoutOptions.maxCellSize * resolvedScale));
 
-    const nativeFillCellSize = Math.max(minCellSize, Math.min(16, maxCellSize));
-    const bestCellSize = nativeFillCellSize;
+    const bestCellSize = maxCellSize;
     const bestRows = Math.max(1, Math.floor(boardHeight / bestCellSize));
     const bestColumns = Math.max(1, Math.floor(safeWidth / bestCellSize));
 
@@ -142,6 +169,8 @@ export function createMinesweeperCanvasController(
 
   function render(): void {
     const state = store.getState();
+    const resolvedScale = getLayoutScale(canvas.clientWidth);
+    const dynamicLayoutOptions = getResolvedLayoutOptions(canvas.clientWidth);
     layout = computeAdaptiveBoardLayout(
       {
         width: canvas.clientWidth,
@@ -149,8 +178,11 @@ export function createMinesweeperCanvasController(
       },
       state.rows,
       state.columns,
-      layoutOptions.uiChromePx,
-      layoutOptions,
+      Math.round(layoutOptions.uiChromePx * resolvedScale),
+      {
+        ...dynamicLayoutOptions,
+        uiChromePx: Math.round(layoutOptions.uiChromePx * resolvedScale),
+      },
     );
     options.onLayoutChange?.(layout);
     renderFrame(
