@@ -5,6 +5,9 @@ import { onImagesLoaded, renderFrame } from '../canvas/renderer';
 import { bindCanvasInput } from '../canvas/input';
 import { createGameStateStore } from '../core/engine/useGameState';
 import type { CanvasHost } from './bootstrap';
+import loseSound from '../ui/assets/sounds/lose.wav';
+import tickSound from '../ui/assets/sounds/tick.wav';
+import winSound from '../ui/assets/sounds/win.wav';
 
 export interface MinesweeperCanvasController {
   start: () => void;
@@ -51,11 +54,29 @@ export function createMinesweeperCanvasController(
     ...DEFAULT_LAYOUT_OPTIONS,
     ...options.layout,
   };
+  const playSound = (src: string): void => {
+    try {
+      const audio = new Audio(src);
+      audio.volume = 0.8;
+      const pending = audio.play();
+      if (typeof pending?.catch === 'function') {
+        pending.catch(() => {
+          // Browser audio policies can block autoplay before user interaction.
+        });
+      }
+    } catch {
+      // Ignore audio errors to avoid impacting gameplay.
+    }
+  };
+  const playLoseSound = (): void => playSound(loseSound);
+  const playTickSound = (): void => playSound(tickSound);
+  const playWinSound = (): void => playSound(winSound);
 
   let facePressed = false;
   let timerSeconds = 0;
   let timerInterval: number | undefined;
   let previousStatus = store.getState().status;
+  let previousState = store.getState();
   let unregisterImagesLoaded: () => void = () => {};
   let isFillToWindow = false;
   let fillConfig: FillToWindowConfig | null = null;
@@ -137,6 +158,20 @@ export function createMinesweeperCanvasController(
     };
   };
 
+  const hasOpenedCell = (previous: ReturnType<typeof store.getState>, next: ReturnType<typeof store.getState>): boolean => {
+    if (previous.status === 'won' || previous.status === 'died' || next.status === 'won' || next.status === 'died') {
+      return false;
+    }
+
+    for (let i = 0; i < previous.ceils.length; i += 1) {
+      if (!next.ceils[i]) continue;
+      if (previous.ceils[i]?.state !== 'open' && next.ceils[i]!.state === 'open') {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const applyFillToWindow = (force = false): void => {
     if (!isFillToWindow) return;
     const nextConfig = computeFillConfig();
@@ -199,6 +234,14 @@ export function createMinesweeperCanvasController(
   }
 
   function onStoreUpdate(state: ReturnType<typeof store.getState>): void {
+    if (state.status === 'won' && previousStatus !== 'won') {
+      playWinSound();
+    } else if (state.status === 'died' && previousStatus !== 'died') {
+      playLoseSound();
+    } else if (hasOpenedCell(previousState, state)) {
+      playTickSound();
+    }
+
     if (state.status !== previousStatus) {
       if (state.status === 'started' && previousStatus === 'new') {
         timerSeconds = 0;
@@ -221,6 +264,7 @@ export function createMinesweeperCanvasController(
       timerSeconds = 0;
     }
 
+    previousState = state;
     render();
   }
 
