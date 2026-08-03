@@ -13,9 +13,9 @@ export interface MinesweeperCanvasController {
 }
 
 const DEFAULT_LAYOUT_OPTIONS = {
-  uiChromePx: 120,
+  uiChromePx: 14,
   minCellSize: 8,
-  maxCellSize: 48,
+  maxCellSize: 64,
   padding: 6,
 };
 

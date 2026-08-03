@@ -11,9 +11,9 @@ export interface FullscreenLayoutOptions {
 const DEFAULT_FULLSCREEN_LAYOUT_OPTIONS: Required<Omit<FullscreenLayoutOptions, 'uiChromePx'>> & {
   uiChromePx: number;
 } = {
-  uiChromePx: 120,
+  uiChromePx: 14,
   minCellSize: 8,
-  maxCellSize: 48,
+  maxCellSize: 64,
   padding: 6,
 };
 

@@ -50,29 +50,39 @@ export function computeAdaptiveBoardLayout(
   columns: number,
   options: LayoutOptions = {},
 ): BoardLayout {
-  const { minCellSize = 16, maxCellSize = 64, chromeHeight = 70, padding = 12 } = options;
+  const {
+    minCellSize = 16,
+    maxCellSize = 64,
+    chromeHeight = 28,
+    padding = 12,
+  } = options;
   const safeWidth = Math.max(1, viewport.width - padding * 2);
   const safeHeight = Math.max(1, viewport.height - padding * 2);
+  const reservedTop = Math.max(0, Math.round(chromeHeight));
 
-  const availableHeight = Math.max(1, safeHeight - chromeHeight);
-  const cellSize = clamp(
+  const availableHeight = Math.max(1, safeHeight - reservedTop);
+  let cellSize = clamp(
     Math.floor(Math.min(safeWidth / columns, availableHeight / rows)),
     minCellSize,
     maxCellSize,
   );
+  let topBarHeight = Math.max(Math.round(cellSize * 2.3), 44);
+  while (cellSize > minCellSize && rows * cellSize + topBarHeight > availableHeight) {
+    cellSize -= 1;
+    topBarHeight = Math.max(Math.round(cellSize * 2.3), 44);
+  }
 
   const boardWidth = columns * cellSize;
   const boardHeight = rows * cellSize;
 
   const faceSize = Math.max(24, Math.round(cellSize * 1.5));
-  const topBarHeight = Math.max(Math.round(cellSize * 2.3), 44);
   const digitHeight = Math.max(Math.round(topBarHeight * 0.72), 18);
   const digitWidth = Math.round(digitHeight * 0.62);
   const counterWidth = digitWidth * 3 + 6;
   const totalHeight = topBarHeight + boardHeight;
 
   const x = Math.max(0, Math.round((viewport.width - boardWidth) / 2));
-  const y = Math.max(0, Math.round((viewport.height - totalHeight) / 2));
+  const y = Math.max(0, Math.round(padding + reservedTop));
 
   return {
     rows,
