@@ -2,6 +2,10 @@
 
 Clone de Minesweeper (inspiration Windows XP) en TypeScript + Canvas.
 
+Repo d’origine:
+
+- https://github.com/ShizukuIchi/minesweeper
+
 ## Fonctionnalités
 
 - Moteur de jeu complet (placement de mines, ouverture récursive, drapeaux, conditions de victoire/défaite)
