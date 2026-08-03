@@ -163,10 +163,11 @@ function drawCellSprite(
   size: number,
 ): void {
   if (!image.complete) return;
-  const targetX = Math.round(x);
-  const targetY = Math.round(y);
-  const targetSize = Math.max(1, Math.round(size));
-  drawImageFrame(ctx, image, targetX, targetY, targetSize, targetSize, 0);
+  const targetX = Math.floor(x);
+  const targetY = Math.floor(y);
+  const targetWidth = Math.max(1, Math.ceil(size));
+  const targetHeight = Math.max(1, Math.ceil(size));
+  ctx.drawImage(image, targetX, targetY, targetWidth, targetHeight);
 }
 
 function drawCellBackground(
