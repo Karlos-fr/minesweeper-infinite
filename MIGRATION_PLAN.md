@@ -141,7 +141,7 @@ Créer la structure suivante (un fichier par unité fonctionnelle) :
 ### Tâche 5.1 — Wiring final
 - [x] `src/main.ts` en entrée
 - [x] `src/app/initialize.ts` (orchestration complète quand le moteur est prêt)
-- [ ] Service worker / offline: selon cible
+- [x] Service worker / offline: selon cible
 
 ### Tâche 5.2 — Contrôle de compatibilité “full iso”
 - [x] Comparatif fonctionnalités avec version JS
