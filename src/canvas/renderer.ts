@@ -177,55 +177,29 @@ function drawCellBackground(
   size: number,
   raised: boolean,
 ): void {
-  const light = '#e3e3e3';
-  const dark = '#878787';
-  const darker = '#777';
+  const cellX = Math.floor(x);
+  const cellY = Math.floor(y);
+  const cellSize = Math.max(1, Math.floor(size));
+  const scale = Math.max(1, Math.round(cellSize / 16));
+  const raisedBorder = Math.max(1, Math.round(2 * scale));
+  const openBorder = Math.max(1, Math.round(1 * scale));
+
+  ctx.fillStyle = '#c0c0c0';
+  ctx.fillRect(cellX, cellY, cellSize, cellSize);
 
   if (raised) {
-    ctx.fillStyle = light;
-    ctx.fillRect(x, y, size, size);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x, y + size);
-    ctx.lineTo(x + size, y + size);
-    ctx.lineTo(x + size, y);
-    ctx.stroke();
-    ctx.strokeStyle = dark;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x, y + size);
-    ctx.lineTo(x + size, y + size);
-    ctx.stroke();
-  } else {
-    ctx.fillStyle = '#c2c2c2';
-    ctx.fillRect(x, y, size, size);
-    ctx.strokeStyle = dark;
-    ctx.strokeRect(x, y, size, size);
-    ctx.strokeStyle = '#fff';
-    ctx.beginPath();
-    ctx.moveTo(x + 1, y + 1);
-    ctx.lineTo(x + 1, y + size - 1);
-    ctx.lineTo(x + size - 1, y + size - 1);
-    ctx.stroke();
+    ctx.fillStyle = '#f5f5f5';
+    ctx.fillRect(cellX, cellY, cellSize, raisedBorder);
+    ctx.fillRect(cellX, cellY, raisedBorder, cellSize);
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(cellX, cellY + cellSize - raisedBorder, cellSize, raisedBorder);
+    ctx.fillRect(cellX + cellSize - raisedBorder, cellY, raisedBorder, cellSize);
+    return;
   }
 
-  ctx.fillStyle = 'rgba(255,255,255,0.14)';
-  if (raised) {
-    ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
-  }
-
-  if (!raised) {
-    ctx.fillStyle = 'rgba(0,0,0,0.05)';
-    ctx.fillRect(x, y, size, size);
-  } else {
-    ctx.strokeStyle = darker;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + size - 1, y);
-    ctx.lineTo(x + size - 1, y + size - 1);
-    ctx.stroke();
-  }
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(cellX, cellY, openBorder, cellSize);
+  ctx.fillRect(cellX, cellY, cellSize, openBorder);
 }
 
 function formatCounter(value: number): string {
@@ -279,27 +253,26 @@ function drawCounter(
   rect: BoardRect,
 ): void {
   const chars = numberToDigits(value);
-  const sample = numberToDigits(-12);
-  const sampleImg = getDigitImage(sample[1]);
-  const ratio = sampleImg?.width ? sampleImg.width / Math.max(1, sampleImg.height) : 0.62;
+  const sampleImg = getDigitImage('0');
+  const ratio = sampleImg?.width ? sampleImg.width / Math.max(1, sampleImg.height) : 13 / 23;
+  const scale = Math.max(1, Math.round(rect.width / 40));
+  const inset = Math.max(1, scale);
 
-  const inset = Math.max(2, Math.round(rect.height * 0.16));
   const availableWidth = Math.max(1, rect.width - inset * 2);
-  const availableHeight = Math.max(1, rect.height - inset * 2);
+  const availableHeight = Math.max(1, rect.height - inset);
   let digitHeight = Math.max(1, availableHeight);
   let digitWidth = Math.round(digitHeight * ratio);
-  let spacing = Math.max(1, Math.round(digitWidth * 0.08));
+  const spacing = 0;
   const requiredWidth = () => chars.length * digitWidth + (chars.length - 1) * spacing;
 
   while (requiredWidth() > availableWidth && digitHeight > 1) {
     digitHeight -= 1;
     digitWidth = Math.max(1, Math.round(digitHeight * ratio));
-    spacing = Math.max(1, Math.round(digitWidth * 0.08));
   }
 
   const blockWidth = requiredWidth();
-  const txStart = rect.x + Math.max(1, Math.round((rect.width - blockWidth) / 2));
-  const ty = rect.y + Math.max(1, Math.round((rect.height - digitHeight) / 2));
+  const txStart = rect.x + rect.width - inset - blockWidth;
+  const ty = rect.y + Math.max(0, Math.round((rect.height - digitHeight) / 2));
 
   chars.forEach((char, index) => {
     const img = getDigitImage(char);
