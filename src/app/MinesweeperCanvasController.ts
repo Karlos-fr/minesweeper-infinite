@@ -271,6 +271,10 @@ export function createMinesweeperCanvasController(
     canvas,
     () => layout,
     {
+      isGridInteractive: () => {
+        const status = store.getState().status;
+        return status !== 'won' && status !== 'died';
+      },
       onOpenCell: index => {
         store.open(index);
       },

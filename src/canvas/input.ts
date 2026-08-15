@@ -8,6 +8,7 @@ export interface CanvasInteractionState {
 }
 
 export interface CanvasInputCallbacks {
+  isGridInteractive: () => boolean;
   onOpenCell: (index: number) => void;
   onChordCell: (index: number) => void;
   onFlagCell: (index: number) => void;
@@ -122,6 +123,13 @@ export function bindCanvasInput(
       return;
     }
 
+    if (!callbacks.isGridInteractive()) {
+      state.mode = null;
+      state.index = -1;
+      longPressPointerId = -1;
+      return;
+    }
+
     const index = getCellIndexFromPoint(event.clientX, event.clientY, targetCanvas, layout);
     if (index < 0) {
       state.index = -1;
@@ -146,7 +154,7 @@ export function bindCanvasInput(
 
     if (event.pointerType === 'touch') {
       longPressTimer = window.setTimeout(() => {
-        if (longPressIndex === index) {
+        if (longPressIndex === index && callbacks.isGridInteractive()) {
           callbacks.onFlagCell(index);
           longPressTriggered = true;
           callbacks.onPreviewClear();
@@ -160,6 +168,10 @@ export function bindCanvasInput(
 
   const handlePointerMove = (event: PointerEvent): void => {
     if (event.pointerId !== longPressPointerId) return;
+    if (!callbacks.isGridInteractive()) {
+      handlePointerCancel();
+      return;
+    }
     const layout = getLayout();
     const targetCanvas = event.currentTarget as HTMLCanvasElement;
 
@@ -219,6 +231,8 @@ export function bindCanvasInput(
     const activeMode = state.mode;
     const index = state.index;
 
+    callbacks.onPreviewClear();
+
     if (activeMode === 'single' && index >= 0) {
       callbacks.onOpenCell(index);
     }
@@ -226,7 +240,6 @@ export function bindCanvasInput(
       callbacks.onChordCell(index);
     }
 
-    callbacks.onPreviewClear();
     state.mode = null;
     state.index = -1;
     longPressPointerId = -1;
