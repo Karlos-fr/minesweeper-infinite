@@ -16,7 +16,7 @@ const DEFAULT_FULLSCREEN_LAYOUT_OPTIONS: Required<Omit<FullscreenLayoutOptions, 
   minCellSize: 16,
   maxCellSize: 16,
   padding: 6,
-  scale: 2,
+  scale: 1,
 };
 
 export function computeAdaptiveBoardLayout(

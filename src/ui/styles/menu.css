@@ -14,14 +14,13 @@
   align-items: stretch;
   height: calc(20px * var(--ms-scale));
   background-color: #ece9d8;
-  border-right: 1px solid #dfdfdf;
 }
 
 .ms-menu__item {
   appearance: none;
   border: 0;
   margin: 0;
-  padding: 0 calc(10px * var(--ms-scale));
+  padding: 0 calc(5px * var(--ms-scale));
   height: 100%;
   background: transparent;
   color: #1f1f1f;
@@ -38,8 +37,8 @@
 
 .ms-menu__panel {
   position: absolute;
-  min-width: 0;
-  width: 100%;
+  min-width: calc(132px * var(--ms-scale));
+  width: max-content;
   background: #fff;
   border: 1px solid #808080;
   box-shadow: 2px 2px 1px rgba(0, 0, 0, 0.45);
@@ -48,16 +47,41 @@
 
 .ms-menu__row {
   width: 100%;
-  height: calc(20px * var(--ms-scale));
-  padding: 0 calc(6px * var(--ms-scale));
+  min-width: calc(128px * var(--ms-scale));
+  height: calc(18px * var(--ms-scale));
+  padding: 0;
   border: 0;
   background: #fff;
-  display: block;
+  display: grid;
+  grid-template-columns: calc(18px * var(--ms-scale)) max-content 1fr calc(15px * var(--ms-scale));
+  align-items: center;
   text-align: left;
   font-size: calc(11px * var(--ms-scale));
-  line-height: calc(20px * var(--ms-scale));
+  line-height: calc(18px * var(--ms-scale));
   color: #1f1f1f;
   cursor: default;
+}
+
+.ms-menu__check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.ms-menu__check img {
+  width: calc(7px * var(--ms-scale));
+  height: calc(7px * var(--ms-scale));
+  image-rendering: pixelated;
+}
+
+.ms-menu__label {
+  white-space: nowrap;
+}
+
+.ms-menu__hotkey {
+  padding-left: calc(5px * var(--ms-scale));
+  text-align: right;
 }
 
 .ms-menu__row:hover:not(:disabled) {

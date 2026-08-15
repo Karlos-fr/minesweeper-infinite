@@ -92,8 +92,8 @@ export function createPlayableFullScreenGrid(
     {
       initialDifficulty: difficulty,
       initialMarksEnabled: true,
-      initialColorEnabled: false,
-      initialSoundEnabled: true,
+      initialColorEnabled: true,
+      initialSoundEnabled: false,
     },
   );
 
@@ -107,6 +107,10 @@ export function createPlayableFullScreenGrid(
       activeDifficulty = difficultyArg;
       controller.setDifficulty(difficultyArg);
       menu.setDifficulty(difficultyArg);
+    },
+    setFillToWindow: () => {
+      activeMode = 'fillToWindow';
+      controller.setFillToWindow();
     },
     dispose: () => {
       controller.dispose();

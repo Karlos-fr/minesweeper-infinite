@@ -21,7 +21,7 @@ const DEFAULT_LAYOUT_OPTIONS = {
   minCellSize: 8,
   maxCellSize: 16,
   padding: 6,
-  scale: 2,
+  scale: 1,
 };
 
 export interface CanvasControllerLayoutOptions {
@@ -81,9 +81,6 @@ export function createMinesweeperCanvasController(
   let isFillToWindow = false;
   let fillConfig: FillToWindowConfig | null = null;
 
-  const MENU_BAR_HEIGHT = 20;
-  const SCORE_BAR_HEIGHT = 34;
-
   const getLayoutScale = (viewportWidth: number): number => {
     if (layoutOptions.scale !== undefined) {
       return layoutOptions.scale;
@@ -128,21 +125,17 @@ export function createMinesweeperCanvasController(
     const density = getCellDensity(state);
     const viewport = getSafeViewport();
     const resolvedScale = getLayoutScale(viewport.width);
-    const resolvedChromeHeight = Math.round(layoutOptions.uiChromePx * resolvedScale);
-    const resolvedMenuBarHeight = Math.max(1, Math.round(MENU_BAR_HEIGHT * resolvedScale));
-    const resolvedScoreBarHeight = Math.max(1, Math.round(SCORE_BAR_HEIGHT * resolvedScale));
     const safeWidth = Math.max(1, Math.round(viewport.width - Math.round(layoutOptions.padding * resolvedScale) * 2));
     const safeHeight = Math.max(1, Math.round(viewport.height - Math.round(layoutOptions.padding * resolvedScale) * 2));
-    const reservedTop = Math.max(0, resolvedChromeHeight);
-    const availableHeight = Math.max(1, safeHeight - reservedTop);
-    const boardHeight = Math.max(1, availableHeight - (resolvedMenuBarHeight + resolvedScoreBarHeight));
+    const boardWidth = Math.max(1, safeWidth - Math.round(19 * resolvedScale));
+    const boardHeight = Math.max(1, safeHeight - Math.round(78 * resolvedScale));
 
     const minCellSize = Math.max(4, Math.round(layoutOptions.minCellSize * resolvedScale));
     const maxCellSize = Math.max(minCellSize, Math.round(layoutOptions.maxCellSize * resolvedScale));
 
     const bestCellSize = maxCellSize;
     const bestRows = Math.max(1, Math.floor(boardHeight / bestCellSize));
-    const bestColumns = Math.max(1, Math.floor(safeWidth / bestCellSize));
+    const bestColumns = Math.max(1, Math.floor(boardWidth / bestCellSize));
 
     const total = bestRows * bestColumns;
     const rawMines = Math.round(total * density);
@@ -336,7 +329,7 @@ export function createMinesweeperCanvasController(
       isFillToWindow = false;
       fillConfig = null;
       store.setDifficulty(difficulty);
-      store.reset(difficulty);
+      store.reset({ difficulty });
       timerSeconds = 0;
       stopTimer();
       previousStatus = store.getState().status;

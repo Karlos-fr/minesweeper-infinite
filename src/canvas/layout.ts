@@ -1,4 +1,4 @@
-import { Difficulty } from '../core/types';
+import type { Difficulty } from '../core/types';
 
 export interface LayoutViewport {
   width: number;
@@ -18,13 +18,11 @@ export interface BoardLayout {
   readonly cellSize: number;
   readonly canvasWidth: number;
   readonly canvasHeight: number;
+  /** Exact rectangle occupied by the playable cells. */
   readonly board: BoardRect;
+  /** Exact rectangle occupied by the complete Minesweeper window. */
   readonly topBar: BoardRect;
-  readonly face: {
-    x: number;
-    y: number;
-    size: number;
-  };
+  readonly face: { x: number; y: number; size: number };
   readonly leftCounter: BoardRect;
   readonly rightCounter: BoardRect;
 }
@@ -41,59 +39,67 @@ export interface DifficultyPreset {
   readonly difficulty: Difficulty;
 }
 
+const REFERENCE_CELL_SIZE = 16;
+
 function clamp(value: number, min: number, max: number): number {
   if (value < min) return min;
   if (value > max) return max;
   return value;
 }
 
+function scaled(value: number, cellSize: number): number {
+  return Math.max(1, Math.round(value * (cellSize / REFERENCE_CELL_SIZE)));
+}
+
+/**
+ * Reproduces the geometry of ShizukuIchi/minesweeper. At the reference size,
+ * a window is exactly `columns * 16 + 19` by `rows * 16 + 78` pixels.
+ */
 export function computeAdaptiveBoardLayout(
   viewport: LayoutViewport,
   rows: number,
   columns: number,
   options: LayoutOptions = {},
 ): BoardLayout {
-  const {
-    minCellSize = 8,
-    maxCellSize = 16,
-    chromeHeight = 28,
-    padding = 12,
-    scale = 1,
-  } = options;
-  const resolvedScale = Number.isFinite(scale as number) ? Math.max(0.5, scale as number) : 1;
-  const safeWidth = Math.max(1, Math.round(viewport.width - Math.round(padding * resolvedScale) * 2));
-  const safeHeight = Math.max(1, Math.round(viewport.height - Math.round(padding * resolvedScale) * 2));
-  const reservedTop = Math.max(0, Math.round(chromeHeight * resolvedScale));
+  const { minCellSize = 8, maxCellSize = 16, padding = 6, scale = 1 } = options;
+  const safeScale = Number.isFinite(scale) ? Math.max(0.5, scale) : 1;
+  const minSize = Math.max(4, Math.round(minCellSize * safeScale));
+  const maxSize = Math.max(minSize, Math.round(maxCellSize * safeScale));
+  const outerPadding = Math.max(0, Math.round(padding));
 
-  const availableHeight = Math.max(1, safeHeight - reservedTop);
-  const MENU_BAR_HEIGHT = Math.max(1, Math.round(20 * resolvedScale));
-  const SCORE_BAR_HEIGHT = Math.max(1, Math.round(34 * resolvedScale));
-  const resolvedMinCellSize = Math.max(1, Math.round(minCellSize * resolvedScale));
-  const resolvedMaxCellSize = Math.max(resolvedMinCellSize, Math.round(maxCellSize * resolvedScale));
-  let cellSize = clamp(
-    Math.floor(Math.min(safeWidth / columns, availableHeight / rows)),
-    resolvedMinCellSize,
-    resolvedMaxCellSize,
+  const horizontalChrome = scaled(19, maxSize);
+  const verticalChrome = scaled(78, maxSize);
+  const availableWidth = Math.max(1, viewport.width - outerPadding * 2 - horizontalChrome);
+  const availableHeight = Math.max(1, viewport.height - outerPadding * 2 - verticalChrome);
+  const cellSize = clamp(
+    Math.floor(Math.min(availableWidth / columns, availableHeight / rows)),
+    minSize,
+    maxSize,
   );
-  const topBarHeight = MENU_BAR_HEIGHT + SCORE_BAR_HEIGHT;
-  while (cellSize > resolvedMinCellSize && rows * cellSize + topBarHeight > availableHeight) {
-    cellSize -= 1;
-  }
+
+  const menuHeight = scaled(20, cellSize);
+  const outerBorder = scaled(3, cellSize);
+  const contentPadding = scaled(5, cellSize);
+  const scoreHeight = scaled(34, cellSize);
+  const scoreGap = scaled(5, cellSize);
+  const boardBorder = scaled(3, cellSize);
+  const counterWidth = scaled(40, cellSize);
+  const counterHeight = scaled(24, cellSize);
+  const faceSize = scaled(24, cellSize);
 
   const boardWidth = columns * cellSize;
   const boardHeight = rows * cellSize;
-
-  const scoreBarPaddingX = Math.max(1, Math.round(4 * resolvedScale));
-  const scoreBarPaddingRight = Math.max(1, Math.round(7 * resolvedScale));
-  const counterHeight = Math.max(1, SCORE_BAR_HEIGHT - 2 * Math.round(2 * resolvedScale) - 2 * Math.round(3 * resolvedScale));
-  const counterWidth = Math.max(1, Math.round(40 * resolvedScale));
-  const faceSize = Math.max(
-    Math.round(16 * resolvedScale),
-    Math.round(Math.min(cellSize * 1.5, SCORE_BAR_HEIGHT - Math.round(8 * resolvedScale))),
-  );
-
-  const x = Math.max(0, Math.round((viewport.width - boardWidth) / 2));
-  const y = Math.max(0, Math.round(padding + reservedTop));
+  const windowWidth = outerBorder + contentPadding * 2 + boardBorder * 2 + boardWidth;
+  const windowHeight =
+    menuHeight + outerBorder + contentPadding * 2 + scoreHeight + scoreGap + boardBorder * 2 + boardHeight;
+  const windowX = Math.max(0, Math.round((viewport.width - windowWidth) / 2));
+  const windowY = Math.max(0, Math.round((viewport.height - windowHeight) / 2));
+  const scoreX = windowX + outerBorder + contentPadding;
+  const scoreY = windowY + menuHeight + outerBorder + contentPadding;
+  const gridX = scoreX + boardBorder;
+  const gridY = scoreY + scoreHeight + scoreGap + boardBorder;
+  const counterY = scoreY + Math.round((scoreHeight - counterHeight) / 2);
+  const scoreWidth = boardWidth + boardBorder * 2;
 
   return {
     rows,
@@ -101,32 +107,22 @@ export function computeAdaptiveBoardLayout(
     cellSize,
     canvasWidth: viewport.width,
     canvasHeight: viewport.height,
-    board: {
-      x,
-      y: y + topBarHeight,
-      width: boardWidth,
-      height: boardHeight,
-    },
-    topBar: {
-      x,
-      y,
-      width: boardWidth,
-      height: topBarHeight,
-    },
+    board: { x: gridX, y: gridY, width: boardWidth, height: boardHeight },
+    topBar: { x: windowX, y: windowY, width: windowWidth, height: windowHeight },
     face: {
-      x: x + Math.floor((boardWidth - faceSize) / 2),
-      y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - faceSize) / 2),
+      x: scoreX + Math.floor((scoreWidth - faceSize) / 2),
+      y: scoreY + Math.floor((scoreHeight - faceSize) / 2),
       size: faceSize,
     },
     leftCounter: {
-      x: Math.max(x + scoreBarPaddingX, 0),
-      y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - counterHeight) / 2),
+      x: scoreX + scaled(4, cellSize),
+      y: counterY,
       width: counterWidth,
       height: counterHeight,
     },
     rightCounter: {
-      x: Math.max(x + boardWidth - counterWidth - scoreBarPaddingRight, 0),
-      y: Math.round(y + MENU_BAR_HEIGHT + (SCORE_BAR_HEIGHT - counterHeight) / 2),
+      x: scoreX + scoreWidth - scaled(7, cellSize) - counterWidth,
+      y: counterY,
       width: counterWidth,
       height: counterHeight,
     },
@@ -134,10 +130,7 @@ export function computeAdaptiveBoardLayout(
 }
 
 export function indexToRowColumn(index: number, columns: number): { row: number; column: number } {
-  return {
-    row: Math.floor(index / columns),
-    column: index % columns,
-  };
+  return { row: Math.floor(index / columns), column: index % columns };
 }
 
 export function buildLayoutStateHash(layout: BoardLayout): string {

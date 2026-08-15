@@ -1,5 +1,6 @@
 import type { Difficulty } from '../core/types';
 import type { BoardLayout } from '../canvas/layout';
+import checkedIcon from '../ui/assets/checked.png';
 
 interface MenuActions {
   readonly onNewGame: () => void;
@@ -92,11 +93,35 @@ export function createMinesweeperMenu(
     helpButton.classList.toggle('is-open', name === 'help');
   };
 
+  const setRowContent = (
+    row: HTMLButtonElement,
+    label: string,
+    checked = false,
+    hotkey = '',
+  ): void => {
+    const check = document.createElement('span');
+    check.className = 'ms-menu__check';
+    if (checked) {
+      const image = document.createElement('img');
+      image.src = checkedIcon;
+      image.alt = '';
+      check.appendChild(image);
+    }
+    const text = document.createElement('span');
+    text.className = 'ms-menu__label';
+    text.textContent = label;
+    const shortcut = document.createElement('span');
+    shortcut.className = 'ms-menu__hotkey';
+    shortcut.textContent = hotkey;
+    const arrow = document.createElement('span');
+    arrow.className = 'ms-menu__arrow';
+    row.replaceChildren(check, text, shortcut, arrow);
+  };
+
   const createRow = (text: string, action?: () => void, isDisabled = false): HTMLButtonElement => {
     const row = document.createElement('button');
     row.type = 'button';
     row.className = 'ms-menu__row';
-    row.textContent = text;
     row.disabled = isDisabled;
     if (action) {
       row.addEventListener('click', event => {
@@ -105,6 +130,7 @@ export function createMinesweeperMenu(
         setOpened(null);
       });
     }
+    setRowContent(row, text);
     return row;
   };
 
@@ -113,22 +139,20 @@ export function createMinesweeperMenu(
     checked: boolean,
     action: (next: boolean) => void,
   ): HTMLButtonElement => {
-    const display = `${checked ? '✓' : '  '} ${label}`;
-    const row = createRow(display, () => {
+    const row = createRow(label, () => {
       const next = !checked;
       checked = next;
       action(next);
       syncState();
     });
     row.dataset.toggle = label;
+    setRowContent(row, label, checked);
     return row;
   };
 
   const createDifficultyRow = (difficulty: Difficulty): HTMLButtonElement => {
     const row = createRow(
-      difficulty === currentDifficulty
-        ? `✓ ${formatDifficultyLabel(difficulty)}`
-        : formatDifficultyLabel(difficulty),
+      formatDifficultyLabel(difficulty),
       () => {
         currentDifficulty = difficulty;
         actions.onChangeDifficulty(difficulty);
@@ -136,12 +160,14 @@ export function createMinesweeperMenu(
       false,
     );
     row.dataset.difficulty = difficulty;
+    setRowContent(row, formatDifficultyLabel(difficulty), difficulty === currentDifficulty);
     return row;
   };
 
   const newRow = createRow('New', () => {
     actions.onNewGame();
   });
+  setRowContent(newRow, 'New', false, 'F2');
   const beginnerRow = createDifficultyRow('Beginner');
   const intermediateRow = createDifficultyRow('Intermediate');
   const expertRow = createDifficultyRow('Expert');
@@ -195,6 +221,7 @@ export function createMinesweeperMenu(
     actions.onOpenContentsHelp?.();
     setOpened(null);
   });
+  setRowContent(helpRow1, 'Contents', false, 'F1');
   const helpRow2 = createRow('Search for Help on...', () => {
     actions.onSearchHelp?.();
     setOpened(null);
@@ -216,15 +243,15 @@ export function createMinesweeperMenu(
   }, false);
 
   const syncState = (): void => {
-    marksRow.textContent = `${marksEnabled ? '✓' : '  '} Marks (?)`;
-    colorRow.textContent = `${colorEnabled ? '✓' : '  '} Color`;
-    soundRow.textContent = `${soundEnabled ? '✓' : '  '} Sound`;
+    setRowContent(marksRow, 'Marks (?)', marksEnabled);
+    setRowContent(colorRow, 'Color', colorEnabled);
+    setRowContent(soundRow, 'Sound', soundEnabled);
   };
 
   const setLayout = (layout: BoardLayout): void => {
     const width = Math.max(1, Math.round(layout.topBar.width));
     const left = Math.max(0, Math.round(layout.topBar.x));
-    const scale = Math.max(1, Math.round(layout.cellSize / 16));
+    const scale = Math.max(0.5, layout.cellSize / 16);
     const menuBarHeight = Math.max(1, Math.round(20 * scale));
 
     menu.style.left = `${left}px`;
@@ -234,10 +261,6 @@ export function createMinesweeperMenu(
 
     topBar.style.width = `${width}px`;
     topBar.style.height = `${menuBarHeight}px`;
-    gamePanel.style.width = `${width}px`;
-    gamePanel.style.minWidth = `${width}px`;
-    helpPanel.style.width = `${width}px`;
-    helpPanel.style.minWidth = `${width}px`;
     gamePanel.style.left = '0px';
     helpPanel.style.left = `${Math.max(0, Math.round(gameButton.offsetWidth))}px`;
     gamePanel.style.top = `${menuBarHeight}px`;
@@ -287,16 +310,9 @@ export function createMinesweeperMenu(
   root.appendChild(menu);
 
   const syncDifficultyState = (): void => {
-    beginnerRow.textContent =
-      currentDifficulty === 'Beginner' ? `✓ ${formatDifficultyLabel('Beginner')}` : formatDifficultyLabel('Beginner');
-    intermediateRow.textContent =
-      currentDifficulty === 'Intermediate'
-        ? `✓ ${formatDifficultyLabel('Intermediate')}`
-        : formatDifficultyLabel('Intermediate');
-    expertRow.textContent =
-      currentDifficulty === 'Expert'
-        ? `✓ ${formatDifficultyLabel('Expert')}`
-        : formatDifficultyLabel('Expert');
+    setRowContent(beginnerRow, formatDifficultyLabel('Beginner'), currentDifficulty === 'Beginner');
+    setRowContent(intermediateRow, formatDifficultyLabel('Intermediate'), currentDifficulty === 'Intermediate');
+    setRowContent(expertRow, formatDifficultyLabel('Expert'), currentDifficulty === 'Expert');
     syncState();
   };
 
