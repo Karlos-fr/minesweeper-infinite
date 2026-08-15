@@ -8,7 +8,7 @@ interface MenuActions {
   readonly onToggleMarks?: (enabled: boolean) => void;
   readonly onToggleColor?: (enabled: boolean) => void;
   readonly onToggleSound?: (enabled: boolean) => void;
-  readonly onCustomDifficulty?: () => void;
+  readonly onFillToWindow?: () => void;
   readonly onBestTimes?: () => void;
   readonly onOpenContentsHelp?: () => void;
   readonly onSearchHelp?: () => void;
@@ -177,8 +177,8 @@ export function createMinesweeperMenu(
   gamePanel.appendChild(intermediateRow);
   gamePanel.appendChild(expertRow);
 
-  const customRow = createRow('Custom...', () => {
-    actions.onCustomDifficulty?.();
+  const fillToWindowRow = createRow('Fit to window', () => {
+    actions.onFillToWindow?.();
     setOpened(null);
   });
 
@@ -207,7 +207,7 @@ export function createMinesweeperMenu(
     setOpened(null);
   });
 
-  gamePanel.appendChild(customRow);
+  gamePanel.appendChild(fillToWindowRow);
   gamePanel.appendChild(separator1.cloneNode(true));
   [marksRow, colorRow, soundRow].forEach(row => gamePanel.appendChild(row));
   gamePanel.appendChild(document.createElement('div')).className = 'ms-menu__separator';

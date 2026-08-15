@@ -52,7 +52,7 @@ export function createPlayableFullScreenGrid(
         controller.setDifficulty(next);
         menu.setDifficulty(next);
       },
-      onCustomDifficulty: () => {
+      onFillToWindow: () => {
         activeMode = 'fillToWindow';
         controller.setFillToWindow();
       },
