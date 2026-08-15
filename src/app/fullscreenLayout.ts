@@ -38,6 +38,7 @@ export function computeAdaptiveBoardLayout(
     chromeHeight: merged.uiChromePx,
     padding: merged.padding,
     scale: merged.scale,
+    pixelRatio: typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1,
   };
 
   return computeCanvasAdaptiveBoardLayout(viewport, rows, columns, normalized);

@@ -5,7 +5,8 @@
   left: 0;
   z-index: 10;
   pointer-events: auto;
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+    Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   user-select: none;
 }
 
@@ -23,7 +24,8 @@
   padding: 0 calc(5px * var(--ms-scale));
   height: 100%;
   background: transparent;
-  color: #1f1f1f;
+  color: #000;
+  font-family: inherit;
   font-size: calc(11px * var(--ms-scale));
   line-height: calc(20px * var(--ms-scale));
   cursor: default;
@@ -31,35 +33,40 @@
 
 .ms-menu__item:hover,
 .ms-menu__item.is-open {
-  background: #0078d7;
+  background: #1660e8;
   color: #fff;
+}
+
+.ms-menu__item:focus {
+  outline: none;
 }
 
 .ms-menu__panel {
   position: absolute;
-  min-width: calc(132px * var(--ms-scale));
+  grid-template-columns: calc(18px * var(--ms-scale)) auto auto calc(15px * var(--ms-scale));
   width: max-content;
   background: #fff;
   border: 1px solid #808080;
-  box-shadow: 2px 2px 1px rgba(0, 0, 0, 0.45);
+  box-shadow: 2px 2px 1px rgb(100, 100, 100);
   padding: calc(2px * var(--ms-scale));
+  font-size: calc(11px * var(--ms-scale));
+  line-height: calc(18px * var(--ms-scale));
 }
 
 .ms-menu__row {
-  width: 100%;
-  min-width: calc(128px * var(--ms-scale));
-  height: calc(18px * var(--ms-scale));
+  width: auto;
+  min-width: 0;
+  height: auto;
   padding: 0;
   border: 0;
   background: #fff;
-  display: grid;
-  grid-template-columns: calc(18px * var(--ms-scale)) max-content 1fr calc(15px * var(--ms-scale));
-  align-items: center;
+  display: contents;
   text-align: left;
   font-size: calc(11px * var(--ms-scale));
   line-height: calc(18px * var(--ms-scale));
-  color: #1f1f1f;
+  color: #000;
   cursor: default;
+  font-family: inherit;
 }
 
 .ms-menu__check {
@@ -84,16 +91,20 @@
   text-align: right;
 }
 
-.ms-menu__row:hover:not(:disabled) {
+.ms-menu__row:hover:not([aria-disabled='true']) > * {
   background: #e99f17;
   color: #fff;
+  filter: invert(100%);
 }
 
-.ms-menu__row:disabled {
+.ms-menu__row[aria-disabled='true'] {
   color: #8c8c8c;
 }
 
 .ms-menu__separator {
-  border-top: 1px solid #808080;
+  grid-column: 1 / 5;
+  height: calc(1px * var(--ms-scale));
+  background: #808080;
+  border: 0;
   margin: calc(3px * var(--ms-scale)) calc(1px * var(--ms-scale));
 }

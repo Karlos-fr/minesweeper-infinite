@@ -63,13 +63,11 @@ export function createMinesweeperMenu(
   const topBar = document.createElement('div');
   topBar.className = 'ms-menu__topbar';
 
-  const gameButton = document.createElement('button');
-  gameButton.type = 'button';
+  const gameButton = document.createElement('div');
   gameButton.className = 'ms-menu__item';
   gameButton.textContent = 'Game';
 
-  const helpButton = document.createElement('button');
-  helpButton.type = 'button';
+  const helpButton = document.createElement('div');
   helpButton.className = 'ms-menu__item';
   helpButton.textContent = 'Help';
 
@@ -86,15 +84,15 @@ export function createMinesweeperMenu(
 
   const setOpened = (name: 'game' | 'help' | null): void => {
     openedMenu = name;
-    gamePanel.style.display = name === 'game' ? 'block' : 'none';
-    helpPanel.style.display = name === 'help' ? 'block' : 'none';
+    gamePanel.style.display = name === 'game' ? 'grid' : 'none';
+    helpPanel.style.display = name === 'help' ? 'grid' : 'none';
 
     gameButton.classList.toggle('is-open', name === 'game');
     helpButton.classList.toggle('is-open', name === 'help');
   };
 
   const setRowContent = (
-    row: HTMLButtonElement,
+    row: HTMLElement,
     label: string,
     checked = false,
     hotkey = '',
@@ -118,11 +116,10 @@ export function createMinesweeperMenu(
     row.replaceChildren(check, text, shortcut, arrow);
   };
 
-  const createRow = (text: string, action?: () => void, isDisabled = false): HTMLButtonElement => {
-    const row = document.createElement('button');
-    row.type = 'button';
+  const createRow = (text: string, action?: () => void, isDisabled = false): HTMLDivElement => {
+    const row = document.createElement('div');
     row.className = 'ms-menu__row';
-    row.disabled = isDisabled;
+    row.setAttribute('aria-disabled', `${isDisabled}`);
     if (action) {
       row.addEventListener('click', event => {
         event.preventDefault();
@@ -138,7 +135,7 @@ export function createMinesweeperMenu(
     label: string,
     checked: boolean,
     action: (next: boolean) => void,
-  ): HTMLButtonElement => {
+  ): HTMLDivElement => {
     const row = createRow(label, () => {
       const next = !checked;
       checked = next;
@@ -150,7 +147,7 @@ export function createMinesweeperMenu(
     return row;
   };
 
-  const createDifficultyRow = (difficulty: Difficulty): HTMLButtonElement => {
+  const createDifficultyRow = (difficulty: Difficulty): HTMLDivElement => {
     const row = createRow(
       formatDifficultyLabel(difficulty),
       () => {
@@ -179,9 +176,8 @@ export function createMinesweeperMenu(
   gamePanel.appendChild(beginnerRow);
   gamePanel.appendChild(intermediateRow);
   gamePanel.appendChild(expertRow);
-  gamePanel.appendChild(separator1.cloneNode(true));
 
-  const customRow = createRow('Fit to window', () => {
+  const customRow = createRow('Custom...', () => {
     actions.onCustomDifficulty?.();
     setOpened(null);
   });
@@ -211,7 +207,9 @@ export function createMinesweeperMenu(
     setOpened(null);
   });
 
-  [customRow, marksRow, colorRow, soundRow].forEach(row => gamePanel.appendChild(row));
+  gamePanel.appendChild(customRow);
+  gamePanel.appendChild(separator1.cloneNode(true));
+  [marksRow, colorRow, soundRow].forEach(row => gamePanel.appendChild(row));
   gamePanel.appendChild(document.createElement('div')).className = 'ms-menu__separator';
   gamePanel.appendChild(scoresRow);
   gamePanel.appendChild(document.createElement('div')).className = 'ms-menu__separator';
@@ -249,13 +247,13 @@ export function createMinesweeperMenu(
   };
 
   const setLayout = (layout: BoardLayout): void => {
-    const width = Math.max(1, Math.round(layout.topBar.width));
-    const left = Math.max(0, Math.round(layout.topBar.x));
+    const width = Math.max(1, layout.topBar.width);
+    const left = Math.max(0, layout.topBar.x);
     const scale = Math.max(0.5, layout.cellSize / 16);
     const menuBarHeight = Math.max(1, Math.round(20 * scale));
 
     menu.style.left = `${left}px`;
-    menu.style.top = `${Math.max(0, Math.round(layout.topBar.y))}px`;
+    menu.style.top = `${Math.max(0, layout.topBar.y)}px`;
     menu.style.width = `${width}px`;
     menu.style.setProperty('--ms-scale', `${scale}`);
 

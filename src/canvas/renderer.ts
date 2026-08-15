@@ -1,5 +1,5 @@
 import type { GameState } from '../core/types';
-import { BoardLayout, type BoardRect } from './layout';
+import type { BoardLayout } from './layout';
 import dead from '../ui/assets/dead.png';
 import smile from '../ui/assets/smile.png';
 import win from '../ui/assets/win.png';
@@ -30,359 +30,156 @@ import digit8 from '../ui/assets/digit8.png';
 import digit9 from '../ui/assets/digit9.png';
 import digitMinus from '../ui/assets/digit-.png';
 
-interface LoadedImages {
-  [key: string]: HTMLImageElement;
-}
-
-type ImageReadyListener = () => void;
-
-const imageSources = {
-  dead,
-  smile,
-  win,
-  ohh,
-  empty,
-  open1,
-  open2,
-  open3,
-  open4,
-  open5,
-  open6,
-  open7,
-  open8,
-  flag,
-  mine,
-  mineDeath,
-  misFlagged,
-  question,
-  digit0,
-  digit1,
-  digit2,
-  digit3,
-  digit4,
-  digit5,
-  digit6,
-  digit7,
-  digit8,
-  digit9,
-  digitMinus,
+const digitSources: Record<string, string> = {
+  '0': digit0,
+  '1': digit1,
+  '2': digit2,
+  '3': digit3,
+  '4': digit4,
+  '5': digit5,
+  '6': digit6,
+  '7': digit7,
+  '8': digit8,
+  '9': digit9,
+  '-': digitMinus,
 };
 
-const imageEntries = Object.entries(imageSources);
-const totalImageCount = imageEntries.length;
-const imageReadyListeners = new Set<ImageReadyListener>();
-let imagesAreReady = false;
-let imageLoadAttemptCount = 0;
-const imageLoadAttempts = new Set<string>();
-const ORIGINAL_TILE_SIZE = 16;
+const openSources = [empty, open1, open2, open3, open4, open5, open6, open7, open8];
 
-function markImageLoaded(key: string): void {
-  if (imageLoadAttempts.has(key)) {
-    return;
-  }
-  imageLoadAttempts.add(key);
-  imageLoadAttemptCount += 1;
-  notifyImageReady();
+interface DomRenderer {
+  readonly root: HTMLDivElement;
+  readonly leftCounter: HTMLDivElement;
+  readonly rightCounter: HTMLDivElement;
+  readonly face: HTMLButtonElement;
+  readonly faceImage: HTMLImageElement;
+  readonly grid: HTMLDivElement;
+  cells: HTMLDivElement[];
 }
 
-function notifyImageReady(): void {
-  if (imagesAreReady) return;
-
-  if (imageLoadAttemptCount >= totalImageCount) {
-    imagesAreReady = true;
-    imageReadyListeners.forEach(listener => listener());
-    imageReadyListeners.clear();
-  }
-}
-
-function loadImages(): LoadedImages {
-  const loaded: LoadedImages = {};
-  imageEntries.forEach(([key, source]) => {
-    const image = new Image();
-    image.onload = (): void => {
-      markImageLoaded(key);
-    };
-    image.onerror = (): void => {
-      markImageLoaded(key);
-    };
-    image.src = source;
-    loaded[key] = image;
-    if (image.complete) {
-      markImageLoaded(key);
-    }
-  });
-  return loaded;
-}
-
-const images = loadImages();
-
-export function onImagesLoaded(callback: ImageReadyListener): () => void {
-  if (imagesAreReady) {
-    callback();
-    return () => {
-      // no-op
-    };
-  }
-
-  imageReadyListeners.add(callback);
-  return () => {
-    imageReadyListeners.delete(callback);
-  };
-}
-
-notifyImageReady();
-
-function drawCellSprite(
-  ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  x: number,
-  y: number,
-  size: number,
-): void {
-  if (!image.complete) return;
-  const targetX = Math.floor(x);
-  const targetY = Math.floor(y);
-  const targetWidth = Math.max(1, Math.ceil(size));
-  const targetHeight = Math.max(1, Math.ceil(size));
-  ctx.drawImage(image, targetX, targetY, targetWidth, targetHeight);
-}
-
-function drawCellBackground(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number,
-  raised: boolean,
-): void {
-  const cellX = Math.floor(x);
-  const cellY = Math.floor(y);
-  const cellSize = Math.max(1, Math.floor(size));
-  const ratio = cellSize / ORIGINAL_TILE_SIZE;
-  const raisedBorder = Math.max(1, Math.round(2 * ratio));
-  const openBorder = Math.max(1, Math.round(ratio));
-
-  ctx.fillStyle = '#c0c0c0';
-  ctx.fillRect(cellX, cellY, cellSize, cellSize);
-
-  if (raised) {
-    ctx.fillStyle = '#f5f5f5';
-    ctx.fillRect(cellX, cellY, cellSize, raisedBorder);
-    ctx.fillRect(cellX, cellY, raisedBorder, cellSize);
-    ctx.fillStyle = '#808080';
-    ctx.fillRect(cellX, cellY + cellSize - raisedBorder, cellSize, raisedBorder);
-    ctx.fillRect(cellX + cellSize - raisedBorder, cellY, raisedBorder, cellSize);
-    return;
-  }
-
-  ctx.fillStyle = '#808080';
-  ctx.fillRect(cellX, cellY, openBorder, cellSize);
-  ctx.fillRect(cellX, cellY, cellSize, openBorder);
-}
+const renderers = new WeakMap<HTMLCanvasElement, DomRenderer>();
 
 function formatCounter(value: number): string {
   const clamped = Math.max(-999, Math.min(999, value));
   if (clamped < 0) {
-    const unsigned = Math.abs(clamped);
-    const body = unsigned < 10 ? `00${unsigned}` : unsigned < 100 ? `0${unsigned}` : `${unsigned}`;
-    return `-${body.slice(-2)}`;
+    return `-${Math.abs(clamped).toString().padStart(2, '0').slice(-2)}`;
   }
-
-  const padded = clamped < 10 ? `00${clamped}` : clamped < 100 ? `0${clamped}` : `${clamped}`;
-  return padded.slice(-3);
+  return clamped.toString().padStart(3, '0').slice(-3);
 }
 
-function numberToDigits(value: number): string[] {
-  return formatCounter(value).split('');
-}
-
-function getDigitImage(char: string): HTMLImageElement {
-  switch (char) {
-    case '-':
-      return images.digitMinus;
-    case '0':
-      return images.digit0;
-    case '1':
-      return images.digit1;
-    case '2':
-      return images.digit2;
-    case '3':
-      return images.digit3;
-    case '4':
-      return images.digit4;
-    case '5':
-      return images.digit5;
-    case '6':
-      return images.digit6;
-    case '7':
-      return images.digit7;
-    case '8':
-      return images.digit8;
-    case '9':
-      return images.digit9;
-    default:
-      return images.digit0;
-  }
-}
-
-function drawCounter(
-  ctx: CanvasRenderingContext2D,
-  value: number,
-  rect: BoardRect,
-): void {
-  const chars = numberToDigits(value);
-  const sampleImg = getDigitImage('0');
-  const ratio = sampleImg?.width ? sampleImg.width / Math.max(1, sampleImg.height) : 13 / 23;
-  const scale = Math.max(1, Math.round(rect.width / 40));
-  const spacing = 0;
-  const digitHeight = Math.max(1, rect.height - scale);
-  const digitWidth = Math.max(1, Math.round(digitHeight * ratio));
-  const requiredWidth = chars.length * digitWidth + (chars.length - 1) * spacing;
-  const availableWidth = Math.max(1, rect.width - scale);
-  if (requiredWidth > availableWidth) return;
-
-  const txStart = rect.x + rect.width - scale - requiredWidth;
-  const ty = Math.max(0, Math.round(rect.y + (rect.height - digitHeight) / 2));
-
-  chars.forEach((char, index) => {
-    const img = getDigitImage(char);
-    if (!img.complete) return;
-    const tx = txStart + index * (digitWidth + spacing);
-    ctx.drawImage(img, tx, ty, digitWidth, digitHeight);
+function setCounter(container: HTMLDivElement, value: number): void {
+  const chars = formatCounter(value).split('');
+  const images = chars.map(char => {
+    const image = document.createElement('img');
+    image.src = digitSources[char] ?? digit0;
+    image.alt = char;
+    return image;
   });
+  container.replaceChildren(...images);
 }
 
-function drawCounterFrame(
-  ctx: CanvasRenderingContext2D,
-  rect: BoardRect,
-): void {
-  const x = Math.floor(rect.x);
-  const y = Math.floor(rect.y);
-  const w = Math.max(1, Math.floor(rect.width));
-  const h = Math.max(1, Math.floor(rect.height));
-  const scale = Math.max(1, Math.round(w / 40));
+function createDomRenderer(canvas: HTMLCanvasElement): DomRenderer {
+  const root = document.createElement('div');
+  root.className = 'ms-board';
+  root.setAttribute('aria-hidden', 'true');
 
-  ctx.fillStyle = '#c0c0c0';
-  ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(x + w - scale, y, scale, h);
-  ctx.fillRect(x, y + h - scale, w, scale);
+  const content = document.createElement('section');
+  content.className = 'ms-board__content';
+  const score = document.createElement('div');
+  score.className = 'ms-board__score';
+  const leftCounter = document.createElement('div');
+  leftCounter.className = 'ms-board__digits';
+  const rightCounter = document.createElement('div');
+  rightCounter.className = 'ms-board__digits';
+  const faceOuter = document.createElement('div');
+  faceOuter.className = 'ms-board__face-outer';
+  const face = document.createElement('button');
+  face.type = 'button';
+  face.className = 'ms-board__face';
+  face.tabIndex = -1;
+  const faceImage = document.createElement('img');
+  faceImage.alt = '';
+  face.appendChild(faceImage);
+  faceOuter.appendChild(face);
+  score.append(leftCounter, faceOuter, rightCounter);
+
+  const grid = document.createElement('div');
+  grid.className = 'ms-board__grid';
+  content.append(score, grid);
+  root.appendChild(content);
+  canvas.parentElement?.appendChild(root);
+
+  return { root, leftCounter, rightCounter, face, faceImage, grid, cells: [] };
 }
 
-function drawFace(
-  ctx: CanvasRenderingContext2D,
-  status: GameState['status'],
-  x: number,
-  y: number,
-  size: number,
-  pressing: boolean,
-): void {
-  const isDead = status === 'died';
-  const isWon = status === 'won';
-  const src = isDead ? images.dead : isWon ? images.win : pressing ? images.ohh : images.smile;
-  const ratio = size / 24;
-  const border = Math.max(1, Math.round(2 * ratio));
-  const pressedBorder = Math.max(1, Math.round(ratio));
-  const faceShift = Math.max(1, Math.round(ratio));
-  const iconSide = Math.max(1, Math.round(size * (17 / 24)));
-  const iconOffset = Math.round((size - iconSide) / 2) + (pressing ? Math.max(0, 1) : 0);
-  const faceX = x + faceShift;
-
-  ctx.fillStyle = '#c0c0c0';
-  ctx.fillRect(faceX, y, size, size);
-
-  ctx.fillStyle = '#808080';
-  ctx.fillRect(faceX, y, faceShift, size);
-  ctx.fillRect(faceX, y, size, faceShift);
-
-  ctx.fillStyle = '#808080';
-  if (pressing) {
-    const pressed = pressedBorder;
-    ctx.fillRect(faceX, y, size, pressed);
-    ctx.fillRect(faceX, y + size - pressed, size, pressed);
-    ctx.fillRect(faceX, y, pressed, size);
-    ctx.fillRect(faceX + size - pressed, y, pressed, size);
-  } else {
-    ctx.fillStyle = '#f5f5f5';
-    ctx.fillRect(faceX, y, size, border);
-    ctx.fillRect(faceX, y, border, size);
-    ctx.fillStyle = '#808080';
-    ctx.fillRect(faceX, y + size - border, size, border);
-    ctx.fillRect(faceX + size - border, y, border, size);
-  }
-
-  if (src.complete) {
-    ctx.drawImage(src, faceX + iconOffset, y + iconOffset, iconSide, iconSide);
-  }
+function ensureCells(renderer: DomRenderer, count: number): void {
+  if (renderer.cells.length === count) return;
+  renderer.cells = Array.from({ length: count }, () => {
+    const cell = document.createElement('div');
+    cell.className = 'ms-board__cell';
+    renderer.grid.appendChild(cell);
+    return cell;
+  });
+  renderer.grid.replaceChildren(...renderer.cells);
 }
 
-function getOpenSprite(minesAround: number): HTMLImageElement {
-  switch (minesAround) {
-    case 1:
-      return images.open1;
-    case 2:
-      return images.open2;
-    case 3:
-      return images.open3;
-    case 4:
-      return images.open4;
-    case 5:
-      return images.open5;
-    case 6:
-      return images.open6;
-    case 7:
-      return images.open7;
-    case 8:
-      return images.open8;
-    default:
-      return images.empty;
-  }
-}
+function renderCell(cell: HTMLDivElement, state: GameState['ceils'][number]): void {
+  const raised = (state.state === 'cover' || state.state === 'unknown') && !state.opening;
+  const background = document.createElement('span');
+  background.className = raised ? 'ms-board__cell-bg is-covered' : 'ms-board__cell-bg is-open';
 
-function drawCeilContent(
-  ctx: CanvasRenderingContext2D,
-  state: GameState['ceils'][number],
-  x: number,
-  y: number,
-  size: number,
-): void {
-  const { state: ceilState, minesAround } = state;
-  const raised = ['cover', 'unknown'].includes(ceilState) && !state.opening;
-  drawCellBackground(ctx, x, y, size, raised);
-
-  switch (ceilState) {
+  let source: string | undefined;
+  switch (state.state) {
     case 'open':
-      drawCellSprite(ctx, getOpenSprite(minesAround), x, y, size);
+      source = openSources[state.minesAround] ?? empty;
       break;
     case 'flag':
-      drawCellSprite(ctx, images.flag, x, y, size);
+      source = flag;
       break;
     case 'unknown':
-      drawCellSprite(ctx, images.question, x, y, size);
+      source = question;
       break;
     case 'mine':
-      drawCellSprite(ctx, images.mine, x, y, size);
+      source = mine;
       break;
     case 'die':
-      drawCellSprite(ctx, images.mineDeath, x, y, size);
+      source = mineDeath;
       break;
     case 'misflagged':
-      drawCellSprite(ctx, images.misFlagged, x, y, size);
+      source = misFlagged;
       break;
     default:
-      if (raised) {
-        // keep style only
-      }
-      break;
+      source = undefined;
   }
+
+  if (!source) {
+    cell.replaceChildren(background);
+    return;
+  }
+
+  const image = document.createElement('img');
+  image.src = source;
+  image.alt = '';
+  cell.replaceChildren(background, image);
 }
 
 function countFlags(state: GameState): number {
-  return state.ceils.filter(ceil => ceil.state === 'flag' || ceil.state === 'misflagged').length;
+  return state.ceils.filter(cell => cell.state === 'flag' || cell.state === 'misflagged').length;
 }
 
 export interface RenderOptions {
   readonly timerSeconds: number;
   readonly facePressed?: boolean;
+}
+
+export function onImagesLoaded(callback: () => void): () => void {
+  callback();
+  return () => undefined;
+}
+
+export function disposeRenderer(canvas: HTMLCanvasElement): void {
+  const renderer = renderers.get(canvas);
+  renderer?.root.remove();
+  renderers.delete(canvas);
 }
 
 export function renderFrame(
@@ -393,79 +190,35 @@ export function renderFrame(
   state: GameState,
   options: RenderOptions,
 ): void {
-  const { board, topBar } = layout;
-  const ratio = layout.cellSize / ORIGINAL_TILE_SIZE;
-  const metric = (value: number): number => Math.max(1, Math.round(value * ratio));
-  const menuHeight = metric(20);
-  const outerBorder = metric(3);
-  const contentPadding = metric(5);
-  const scoreHeight = metric(34);
-  const scoreBorder = metric(2);
-  const boardBorder = metric(3);
-  const scoreX = Math.floor(topBar.x + outerBorder + contentPadding);
-  const scoreY = Math.floor(topBar.y + menuHeight + outerBorder + contentPadding);
-  const scoreW = Math.floor(board.width + boardBorder * 2);
-  const boardFrameX = Math.floor(board.x - boardBorder);
-  const boardFrameY = Math.floor(board.y - boardBorder);
-  const boardFrameW = Math.floor(board.width + boardBorder * 2);
-  const boardFrameH = Math.floor(board.height + boardBorder * 2);
-  const contentY = Math.floor(topBar.y + menuHeight);
-
   ctx.clearRect(0, 0, viewportWidth, viewportHeight);
   ctx.fillStyle = 'rgb(22, 22, 22)';
   ctx.fillRect(0, 0, viewportWidth, viewportHeight);
-  ctx.imageSmoothingEnabled = false;
 
-  const remainMines = state.mines - countFlags(state);
-
-  // Menu and content shell from the original styled-components view.
-  ctx.fillStyle = '#ece9d8';
-  ctx.fillRect(topBar.x, topBar.y, topBar.width, menuHeight);
-  ctx.fillStyle = '#c0c0c0';
-  ctx.fillRect(topBar.x, contentY, topBar.width, topBar.height - menuHeight);
-  ctx.fillStyle = '#f5f5f5';
-  ctx.fillRect(topBar.x, contentY, topBar.width, outerBorder);
-  ctx.fillRect(topBar.x, contentY, outerBorder, topBar.height - menuHeight);
-
-  ctx.fillStyle = '#c0c0c0';
-  ctx.fillRect(scoreX, scoreY, scoreW, scoreHeight);
-  ctx.fillStyle = '#808080';
-  ctx.fillRect(scoreX, scoreY, scoreW, scoreBorder);
-  ctx.fillRect(scoreX, scoreY, scoreBorder, scoreHeight);
-  ctx.fillStyle = '#f5f5f5';
-  ctx.fillRect(scoreX + scoreW - scoreBorder, scoreY, scoreBorder, scoreHeight);
-  ctx.fillRect(scoreX, scoreY + scoreHeight - scoreBorder, scoreW, scoreBorder);
-
-  drawCounterFrame(ctx, layout.leftCounter);
-  drawCounterFrame(ctx, layout.rightCounter);
-  drawCounter(ctx, remainMines, layout.leftCounter);
-  drawCounter(ctx, options.timerSeconds, layout.rightCounter);
-  drawFace(
-    ctx,
-    state.status,
-    layout.face.x,
-    layout.face.y,
-    layout.face.size,
-    options.facePressed ?? false,
-  );
-
-  ctx.fillStyle = '#c0c0c0';
-  ctx.fillRect(boardFrameX, boardFrameY, boardFrameW, boardFrameH);
-  ctx.fillStyle = '#808080';
-  ctx.fillRect(boardFrameX, boardFrameY, boardFrameW, boardBorder);
-  ctx.fillRect(boardFrameX, boardFrameY, boardBorder, boardFrameH);
-  ctx.fillStyle = '#f5f5f5';
-  ctx.fillRect(boardFrameX + boardFrameW - boardBorder, boardFrameY, boardBorder, boardFrameH);
-  ctx.fillRect(boardFrameX, boardFrameY + boardFrameH - boardBorder, boardFrameW, boardBorder);
-
-  for (let row = 0; row < state.rows; row += 1) {
-    for (let column = 0; column < state.columns; column += 1) {
-      const index = row * state.columns + column;
-      const ceil = state.ceils[index];
-      const x = board.x + column * layout.cellSize;
-      const y = board.y + row * layout.cellSize;
-      if (!ceil) continue;
-      drawCeilContent(ctx, ceil, x, y, layout.cellSize);
-    }
+  let renderer = renderers.get(ctx.canvas);
+  if (!renderer) {
+    renderer = createDomRenderer(ctx.canvas);
+    renderers.set(ctx.canvas, renderer);
   }
+
+  const scale = layout.cellSize / 16;
+  renderer.root.style.left = `${layout.topBar.x}px`;
+  renderer.root.style.top = `${layout.topBar.y + 20 * scale}px`;
+  renderer.root.style.setProperty('--ms-board-scale', `${scale}`);
+  renderer.grid.style.gridTemplateColumns = `repeat(${state.columns}, calc(16px * var(--ms-board-scale)))`;
+  renderer.grid.style.gridTemplateRows = `repeat(${state.rows}, calc(16px * var(--ms-board-scale)))`;
+
+  setCounter(renderer.leftCounter, state.mines - countFlags(state));
+  setCounter(renderer.rightCounter, Math.max(0, options.timerSeconds));
+  renderer.face.classList.toggle('is-pressed', options.facePressed ?? false);
+  renderer.faceImage.src =
+    state.status === 'died'
+      ? dead
+      : state.status === 'won'
+        ? win
+        : options.facePressed
+          ? ohh
+          : smile;
+
+  ensureCells(renderer, state.ceils.length);
+  state.ceils.forEach((cell, index) => renderCell(renderer.cells[index]!, cell));
 }

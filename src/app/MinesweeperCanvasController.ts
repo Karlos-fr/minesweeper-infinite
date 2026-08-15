@@ -1,7 +1,7 @@
 import type { Difficulty } from '../core/types';
 import { computeAdaptiveBoardLayout } from './fullscreenLayout';
 import { type BoardLayout } from '../canvas/layout';
-import { onImagesLoaded, renderFrame } from '../canvas/renderer';
+import { disposeRenderer, onImagesLoaded, renderFrame } from '../canvas/renderer';
 import { bindCanvasInput } from '../canvas/input';
 import { createGameStateStore } from '../core/engine/useGameState';
 import type { CanvasHost } from './bootstrap';
@@ -347,6 +347,7 @@ export function createMinesweeperCanvasController(
       unregisterImagesLoaded();
       resizeObserver.disconnect();
       input.dispose();
+      disposeRenderer(canvas);
       window.removeEventListener('resize', handleWindowResize);
       stopTimer();
     },

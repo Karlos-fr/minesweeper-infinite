@@ -1,0 +1,123 @@
+.ms-board {
+  --ms-board-scale: 1;
+  position: fixed;
+  z-index: 1;
+  display: inline-block;
+  pointer-events: none;
+}
+
+.ms-board img {
+  pointer-events: none;
+}
+
+.ms-board__content {
+  display: inline-block;
+  border-left: calc(3px * var(--ms-board-scale)) solid rgb(245, 245, 245);
+  border-top: calc(3px * var(--ms-board-scale)) solid rgb(245, 245, 245);
+  background-color: rgb(192, 192, 192);
+  padding: calc(5px * var(--ms-board-scale));
+}
+
+.ms-board__score {
+  height: calc(34px * var(--ms-board-scale));
+  border-radius: calc(1px * var(--ms-board-scale));
+  border-top: calc(2px * var(--ms-board-scale)) solid rgb(128, 128, 128);
+  border-left: calc(2px * var(--ms-board-scale)) solid rgb(128, 128, 128);
+  border-right: calc(2px * var(--ms-board-scale)) solid rgb(245, 245, 245);
+  border-bottom: calc(2px * var(--ms-board-scale)) solid rgb(245, 245, 245);
+  margin-bottom: calc(5px * var(--ms-board-scale));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(3px * var(--ms-board-scale)) calc(7px * var(--ms-board-scale))
+    calc(3px * var(--ms-board-scale)) calc(4px * var(--ms-board-scale));
+}
+
+.ms-board__digits {
+  width: calc(40px * var(--ms-board-scale));
+  height: calc(24px * var(--ms-board-scale));
+  border-width: 0 calc(1px * var(--ms-board-scale)) calc(1px * var(--ms-board-scale)) 0;
+  border-style: solid;
+  border-color: #fff;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ms-board__digits img {
+  width: calc(13px * var(--ms-board-scale));
+  height: calc(23px * var(--ms-board-scale));
+}
+
+.ms-board__face-outer {
+  width: calc(24px * var(--ms-board-scale));
+  height: calc(24px * var(--ms-board-scale));
+  border-top: calc(1px * var(--ms-board-scale)) solid rgb(128, 128, 128);
+  border-left: calc(1px * var(--ms-board-scale)) solid rgb(128, 128, 128);
+  border-radius: calc(2px * var(--ms-board-scale));
+  transform: translateX(calc(1px * var(--ms-board-scale)));
+}
+
+.ms-board__face {
+  appearance: auto;
+  border-radius: calc(2px * var(--ms-board-scale));
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(192, 192, 192);
+  border-width: calc(2px * var(--ms-board-scale));
+  border-style: solid;
+  border-color: rgb(245, 245, 245) rgb(128, 128, 128) rgb(128, 128, 128)
+    rgb(245, 245, 245);
+  outline: none;
+  padding: 0;
+}
+
+.ms-board__face.is-pressed {
+  border-width: calc(1px * var(--ms-board-scale));
+  border-color: rgb(128, 128, 128);
+}
+
+.ms-board__face img {
+  width: calc(17px * var(--ms-board-scale));
+  height: calc(17px * var(--ms-board-scale));
+}
+
+.ms-board__face.is-pressed img {
+  transform: translate(calc(1px * var(--ms-board-scale)), calc(1px * var(--ms-board-scale)));
+}
+
+.ms-board__grid {
+  display: grid;
+  border-top: calc(3px * var(--ms-board-scale)) solid rgb(128, 128, 128);
+  border-left: calc(3px * var(--ms-board-scale)) solid rgb(128, 128, 128);
+  border-right: calc(3px * var(--ms-board-scale)) solid rgb(245, 245, 245);
+  border-bottom: calc(3px * var(--ms-board-scale)) solid rgb(245, 245, 245);
+}
+
+.ms-board__cell {
+  position: relative;
+  width: calc(16px * var(--ms-board-scale));
+  height: calc(16px * var(--ms-board-scale));
+}
+
+.ms-board__cell-bg,
+.ms-board__cell > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ms-board__cell-bg.is-covered {
+  border-left: calc(2px * var(--ms-board-scale)) solid rgb(245, 245, 245);
+  border-top: calc(2px * var(--ms-board-scale)) solid rgb(245, 245, 245);
+  border-right: calc(2px * var(--ms-board-scale)) solid rgb(128, 128, 128);
+  border-bottom: calc(2px * var(--ms-board-scale)) solid rgb(128, 128, 128);
+}
+
+.ms-board__cell-bg.is-open {
+  border-left: calc(1px * var(--ms-board-scale)) solid rgb(128, 128, 128);
+  border-top: calc(1px * var(--ms-board-scale)) solid rgb(128, 128, 128);
+}
