@@ -14,14 +14,16 @@ export interface MinesweeperCanvasController {
   dispose: () => void;
   setDifficulty: (difficulty: Difficulty) => void;
   setFillToWindow: () => void;
+  setZoom: (zoom: GridZoom) => void;
 }
+
+export type GridZoom = 1 | 1.5 | 2;
 
 const DEFAULT_LAYOUT_OPTIONS = {
   uiChromePx: 14,
   minCellSize: 8,
   maxCellSize: 16,
   padding: 6,
-  scale: 1,
 };
 
 export interface CanvasControllerLayoutOptions {
@@ -29,7 +31,7 @@ export interface CanvasControllerLayoutOptions {
   readonly minCellSize?: number;
   readonly maxCellSize?: number;
   readonly padding?: number;
-  readonly scale?: number;
+  readonly scale?: GridZoom;
 }
 
 export interface MinesweeperCanvasControllerOptions {
@@ -80,21 +82,17 @@ export function createMinesweeperCanvasController(
   let unregisterImagesLoaded: () => void = () => {};
   let isFillToWindow = false;
   let fillConfig: FillToWindowConfig | null = null;
+  let fillDensity: number | null = null;
+  let layoutScale: GridZoom = options.layout?.scale ?? 1;
 
-  const getLayoutScale = (viewportWidth: number): number => {
-    if (layoutOptions.scale !== undefined) {
-      return layoutOptions.scale;
-    }
+  const getLayoutScale = (): GridZoom => layoutScale;
 
-    return 1;
-  };
-
-  const getResolvedLayoutOptions = (viewportWidth: number): Required<CanvasControllerLayoutOptions> & { scale: number } => ({
+  const getResolvedLayoutOptions = (): Required<CanvasControllerLayoutOptions> => ({
     uiChromePx: Math.round(layoutOptions.uiChromePx),
     minCellSize: layoutOptions.minCellSize,
     maxCellSize: layoutOptions.maxCellSize,
     padding: layoutOptions.padding,
-    scale: getLayoutScale(viewportWidth),
+    scale: getLayoutScale(),
   });
 
   const getSafeViewport = (): { width: number; height: number } => ({
@@ -108,23 +106,23 @@ export function createMinesweeperCanvasController(
     return density > 0 && density < 1 ? density : 0.156;
   };
 
-  const initialScale = getLayoutScale(host.canvas.clientWidth);
+  const initialScale = getLayoutScale();
   let layout: BoardLayout = computeAdaptiveBoardLayout(
     { width: host.canvas.clientWidth, height: host.canvas.clientHeight },
     store.getState().rows,
     store.getState().columns,
     Math.round(layoutOptions.uiChromePx * initialScale),
     {
-      ...getResolvedLayoutOptions(host.canvas.clientWidth),
+      ...getResolvedLayoutOptions(),
       uiChromePx: Math.round(layoutOptions.uiChromePx * initialScale),
     },
   );
 
   const computeFillConfig = (): FillToWindowConfig => {
     const state = store.getState();
-    const density = getCellDensity(state);
+    const density = fillDensity ?? getCellDensity(state);
     const viewport = getSafeViewport();
-    const resolvedScale = getLayoutScale(viewport.width);
+    const resolvedScale = getLayoutScale();
     const safeWidth = Math.max(1, Math.round(viewport.width - Math.round(layoutOptions.padding * resolvedScale) * 2));
     const safeHeight = Math.max(1, Math.round(viewport.height - Math.round(layoutOptions.padding * resolvedScale) * 2));
     const boardWidth = Math.max(1, safeWidth - Math.round(19 * resolvedScale));
@@ -195,8 +193,8 @@ export function createMinesweeperCanvasController(
 
   function render(): void {
     const state = store.getState();
-    const resolvedScale = getLayoutScale(canvas.clientWidth);
-    const dynamicLayoutOptions = getResolvedLayoutOptions(canvas.clientWidth);
+    const resolvedScale = getLayoutScale();
+    const dynamicLayoutOptions = getResolvedLayoutOptions();
     layout = computeAdaptiveBoardLayout(
       {
         width: canvas.clientWidth,
@@ -332,6 +330,7 @@ export function createMinesweeperCanvasController(
     setDifficulty: difficulty => {
       isFillToWindow = false;
       fillConfig = null;
+      fillDensity = null;
       store.setDifficulty(difficulty);
       store.reset({ difficulty });
       timerSeconds = 0;
@@ -340,10 +339,22 @@ export function createMinesweeperCanvasController(
       render();
     },
     setFillToWindow: () => {
+      if (!isFillToWindow || fillDensity === null) {
+        fillDensity = getCellDensity(store.getState());
+      }
       isFillToWindow = true;
       applyFillToWindow(true);
       timerSeconds = 0;
       previousStatus = store.getState().status;
+      render();
+    },
+    setZoom: zoom => {
+      if (layoutScale === zoom) return;
+      layoutScale = zoom;
+      if (isFillToWindow) {
+        applyFillToWindow(true);
+        return;
+      }
       render();
     },
     dispose: () => {

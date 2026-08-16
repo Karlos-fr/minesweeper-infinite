@@ -8,6 +8,7 @@
 
 .ms-board img {
   pointer-events: none;
+  image-rendering: pixelated;
 }
 
 .ms-board__content {

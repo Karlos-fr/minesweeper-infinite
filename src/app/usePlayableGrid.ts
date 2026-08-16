@@ -3,6 +3,7 @@ import type { MinesweeperCanvasController } from './MinesweeperCanvasController'
 import {
   createMinesweeperCanvasController,
   type CanvasControllerLayoutOptions,
+  type GridZoom,
 } from './MinesweeperCanvasController';
 import { createMinesweeperMenu } from './menu';
 import type { Difficulty } from '../core/types';
@@ -24,6 +25,7 @@ export function createPlayableFullScreenGrid(
   const fullscreenHost = createFullscreenHost(root);
   let activeDifficulty = difficulty;
   let activeMode: ActiveMode = 'difficulty';
+  let activeZoom: GridZoom = options.scale ?? 1;
   let menu: ReturnType<typeof createMinesweeperMenu>;
   const controller = createMinesweeperCanvasController(
     fullscreenHost.host,
@@ -55,6 +57,10 @@ export function createPlayableFullScreenGrid(
       onFillToWindow: () => {
         activeMode = 'fillToWindow';
         controller.setFillToWindow();
+      },
+      onChangeZoom: zoom => {
+        activeZoom = zoom;
+        controller.setZoom(zoom);
       },
       onToggleMarks: () => {
         return;
@@ -94,6 +100,7 @@ export function createPlayableFullScreenGrid(
       initialMarksEnabled: true,
       initialColorEnabled: true,
       initialSoundEnabled: false,
+      initialZoom: activeZoom,
     },
   );
 
@@ -111,6 +118,11 @@ export function createPlayableFullScreenGrid(
     setFillToWindow: () => {
       activeMode = 'fillToWindow';
       controller.setFillToWindow();
+    },
+    setZoom: zoom => {
+      activeZoom = zoom;
+      controller.setZoom(zoom);
+      menu.setZoom(zoom);
     },
     dispose: () => {
       controller.dispose();

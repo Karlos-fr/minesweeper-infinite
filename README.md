@@ -11,6 +11,7 @@ Repo d’origine:
 - Moteur de jeu complet (placement de mines, ouverture récursive, drapeaux, conditions de victoire/défaite)
 - Rendu Canvas fidèle avec sprites
 - Grille responsive qui occupe l’espace disponible
+- Zoom d’affichage de la grille (`1x`, `1.5x`, `2x`) compatible avec tous les niveaux et le mode `Fit to window`
 - Support des trois difficultés (`Beginner`, `Intermediate`, `Expert`)
 - Timer et états de jeu (`won` / `died`)
 - Enregistrement service worker pour un usage hors ligne basique

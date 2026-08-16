@@ -1,5 +1,6 @@
 import type { Difficulty } from '../core/types';
 import type { BoardLayout } from '../canvas/layout';
+import type { GridZoom } from './MinesweeperCanvasController';
 import checkedIcon from '../ui/assets/checked.png';
 
 interface MenuActions {
@@ -9,6 +10,7 @@ interface MenuActions {
   readonly onToggleColor?: (enabled: boolean) => void;
   readonly onToggleSound?: (enabled: boolean) => void;
   readonly onFillToWindow?: () => void;
+  readonly onChangeZoom?: (zoom: GridZoom) => void;
   readonly onBestTimes?: () => void;
   readonly onOpenContentsHelp?: () => void;
   readonly onSearchHelp?: () => void;
@@ -23,6 +25,7 @@ interface MenuOptions {
   readonly initialMarksEnabled?: boolean;
   readonly initialColorEnabled?: boolean;
   readonly initialSoundEnabled?: boolean;
+  readonly initialZoom?: GridZoom;
 }
 
 export interface MenuSession {
@@ -31,6 +34,7 @@ export interface MenuSession {
   readonly setMarksEnabled: (enabled: boolean) => void;
   readonly setColorEnabled: (enabled: boolean) => void;
   readonly setSoundEnabled: (enabled: boolean) => void;
+  readonly setZoom: (zoom: GridZoom) => void;
   readonly setLayout: (layout: BoardLayout) => void;
 }
 
@@ -53,6 +57,7 @@ export function createMinesweeperMenu(
   let marksEnabled = options.initialMarksEnabled ?? true;
   let colorEnabled = options.initialColorEnabled ?? false;
   let soundEnabled = options.initialSoundEnabled ?? true;
+  let currentZoom = options.initialZoom ?? 1;
   let openedMenu: 'game' | 'help' | null = null;
 
   const menu = document.createElement('div');
@@ -182,6 +187,22 @@ export function createMinesweeperMenu(
     setOpened(null);
   });
 
+  const createZoomRow = (zoom: GridZoom): HTMLDivElement => {
+    const label = `Zoom ${zoom}x`;
+    const row = createRow(label, () => {
+      currentZoom = zoom;
+      actions.onChangeZoom?.(zoom);
+      syncZoomState();
+    });
+    row.dataset.zoom = `${zoom}`;
+    setRowContent(row, label, zoom === currentZoom);
+    return row;
+  };
+
+  const zoom1Row = createZoomRow(1);
+  const zoom15Row = createZoomRow(1.5);
+  const zoom2Row = createZoomRow(2);
+
   const marksRow = createToggleRow('Marks (?)', marksEnabled, next => {
     marksEnabled = next;
     actions.onToggleMarks?.(next);
@@ -208,6 +229,8 @@ export function createMinesweeperMenu(
   });
 
   gamePanel.appendChild(fillToWindowRow);
+  gamePanel.appendChild(separator1.cloneNode(true));
+  [zoom1Row, zoom15Row, zoom2Row].forEach(row => gamePanel.appendChild(row));
   gamePanel.appendChild(separator1.cloneNode(true));
   [marksRow, colorRow, soundRow].forEach(row => gamePanel.appendChild(row));
   gamePanel.appendChild(document.createElement('div')).className = 'ms-menu__separator';
@@ -244,6 +267,12 @@ export function createMinesweeperMenu(
     setRowContent(marksRow, 'Marks (?)', marksEnabled);
     setRowContent(colorRow, 'Color', colorEnabled);
     setRowContent(soundRow, 'Sound', soundEnabled);
+  };
+
+  const syncZoomState = (): void => {
+    setRowContent(zoom1Row, 'Zoom 1x', currentZoom === 1);
+    setRowContent(zoom15Row, 'Zoom 1.5x', currentZoom === 1.5);
+    setRowContent(zoom2Row, 'Zoom 2x', currentZoom === 2);
   };
 
   const setLayout = (layout: BoardLayout): void => {
@@ -312,6 +341,7 @@ export function createMinesweeperMenu(
     setRowContent(intermediateRow, formatDifficultyLabel('Intermediate'), currentDifficulty === 'Intermediate');
     setRowContent(expertRow, formatDifficultyLabel('Expert'), currentDifficulty === 'Expert');
     syncState();
+    syncZoomState();
   };
 
   syncDifficultyState();
@@ -335,6 +365,10 @@ export function createMinesweeperMenu(
       soundEnabled = enabled;
       actions.onToggleSound?.(enabled);
       syncState();
+    },
+    setZoom: zoom => {
+      currentZoom = zoom;
+      syncZoomState();
     },
     setLayout,
     dispose: () => {
