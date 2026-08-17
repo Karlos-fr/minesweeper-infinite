@@ -182,6 +182,48 @@ function resetToCustomConfig(state: GameState, payload?: ClearMapPayload): GameS
 }
 
 // ----------------------------------------------------------------------------
+// Met à jour uniquement les cellules dont l'aperçu d'ouverture change.
+//
+// Paramètres :
+// - state : état courant de la partie.
+// - openingIndexes : index qui doivent apparaître enfoncés.
+//
+// Retour :
+// - état inchangé si aucun aperçu ne varie, sinon nouvel état structurellement partagé.
+//
+// Effets de bord :
+// - aucun.
+// ----------------------------------------------------------------------------
+function updateOpeningPreview(state: GameState, openingIndexes: ReadonlySet<number>): GameState {
+  let changed = false;
+  // Tableau qui réutilise les cellules visuellement identiques pour limiter les allocations.
+  const ceils = state.ceils.map(
+    // ----------------------------------------------------------------------------
+    // Applique l'état d'aperçu attendu à une cellule.
+    //
+    // Paramètres :
+    // - ceil : cellule actuellement stockée.
+    // - index : position de la cellule dans la grille.
+    //
+    // Retour :
+    // - cellule d'origine ou copie dont l'aperçu a changé.
+    //
+    // Effets de bord :
+    // - met à jour l'indicateur local `changed` lorsqu'une copie est nécessaire.
+    // ----------------------------------------------------------------------------
+    (ceil, index) => {
+      // Indique si cette cellule doit être affichée comme enfoncée.
+      const opening = openingIndexes.has(index);
+      if (ceil.opening === opening) return ceil;
+      changed = true;
+      return { ...ceil, opening };
+    },
+  );
+
+  return changed ? { ...state, ceils } : state;
+}
+
+// ----------------------------------------------------------------------------
 // Exécute le traitement jeu reducer.
 //
 // Paramètres :
@@ -380,93 +422,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'OPENING_CEIL': {
       // Constante `{ index }` utilisée par la responsabilité de ce module.
       const { index } = action.payload;
-      // Constante `ceils` utilisée par la responsabilité de ce module.
-      const ceils = state.ceils.map(
-        // ----------------------------------------------------------------------------
-        // Exécute le callback associé à map.
-        //
-        // Paramètres :
-        // - ceil : valeur fournie au traitement.
-        //
-        // Retour :
-        // - valeur de type `{ opening: boolean; state: CellState; minesAround: number; }` produite par le traitement.
-        //
-        // Effets de bord :
-        // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
-        // ----------------------------------------------------------------------------
-        (ceil) => ({
-          ...ceil,
-          opening: false,
-        }),
-      );
-
-      if (!ceils[index]) {
-        return state;
-      }
-
-      ceils[index] = {
-        ...ceils[index],
-        opening: true,
-      };
-
-      return {
-        ...state,
-        ceils,
-      };
+      // Ensemble vide lors du relâchement, ou limité à la cellule pressée.
+      const openingIndexes = new Set<number>();
+      if (state.ceils[index]) openingIndexes.add(index);
+      return updateOpeningPreview(state, openingIndexes);
     }
 
     case 'OPENING_CEILS': {
       // Constante `{ index }` utilisée par la responsabilité de ce module.
       const { index } = action.payload;
+      if (!state.ceils[index]) return state;
       // Constante `neighbors` utilisée par la responsabilité de ce module.
       const neighbors = getNeighborIndexes(index, state.rows, state.columns);
-      // Constante `ceils` utilisée par la responsabilité de ce module.
-      const ceils = state.ceils.map(
-        // ----------------------------------------------------------------------------
-        // Exécute le callback associé à map.
-        //
-        // Paramètres :
-        // - ceil : valeur fournie au traitement.
-        //
-        // Retour :
-        // - valeur de type `{ opening: boolean; state: CellState; minesAround: number; }` produite par le traitement.
-        //
-        // Effets de bord :
-        // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
-        // ----------------------------------------------------------------------------
-        (ceil) => ({
-          ...ceil,
-          opening: false,
-        }),
-      );
-
-      if (!ceils[index]) {
-        return state;
-      }
-
-      [...neighbors, index].forEach(
-        // ----------------------------------------------------------------------------
-        // Exécute le callback associé à for each.
-        //
-        // Paramètres :
-        // - nearIndex : valeur fournie au traitement.
-        //
-        // Effets de bord :
-        // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
-        // ----------------------------------------------------------------------------
-        (nearIndex) => {
-          if (!ceils[nearIndex]) return;
-          ceils[nearIndex] = {
-            ...ceils[nearIndex],
-            opening: true,
-          };
-        },
-      );
-
-      return {
-        ...state,
-        ceils,
-      };
+      // Ensemble des cellules concernées par l'ouverture combinée.
+      const openingIndexes = new Set<number>([...neighbors, index]);
+      return updateOpeningPreview(state, openingIndexes);
     }
 
     default:

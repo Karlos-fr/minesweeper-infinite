@@ -62,6 +62,9 @@ interface DomRenderer {
   readonly faceImage: HTMLImageElement;
   readonly grid: HTMLDivElement;
   cells: HTMLDivElement[];
+  cellKeys: string[];
+  layoutKey: string;
+  canvasKey: string;
 }
 
 // Constante `renderers` utilisée par la responsabilité de ce module.
@@ -99,8 +102,12 @@ function formatCounter(value: number): string {
 // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
 // ----------------------------------------------------------------------------
 function setCounter(container: HTMLDivElement, value: number): void {
+  // Valeur textuelle du compteur, utilisée pour éviter une reconstruction DOM inutile.
+  const formatted = formatCounter(value);
+  if (container.dataset.value === formatted) return;
+
   // Constante `chars` utilisée par la responsabilité de ce module.
-  const chars = formatCounter(value).split('');
+  const chars = formatted.split('');
   // Constante `images` utilisée par la responsabilité de ce module.
   const images = chars.map(
     // ----------------------------------------------------------------------------
@@ -124,6 +131,7 @@ function setCounter(container: HTMLDivElement, value: number): void {
     },
   );
   container.replaceChildren(...images);
+  container.dataset.value = formatted;
 }
 
 // ----------------------------------------------------------------------------
@@ -178,7 +186,18 @@ function createDomRenderer(canvas: HTMLCanvasElement): DomRenderer {
   root.appendChild(content);
   canvas.parentElement?.appendChild(root);
 
-  return { root, leftCounter, rightCounter, face, faceImage, grid, cells: [] };
+  return {
+    root,
+    leftCounter,
+    rightCounter,
+    face,
+    faceImage,
+    grid,
+    cells: [],
+    cellKeys: [],
+    layoutKey: '',
+    canvasKey: '',
+  };
 }
 
 // ----------------------------------------------------------------------------
@@ -193,6 +212,7 @@ function createDomRenderer(canvas: HTMLCanvasElement): DomRenderer {
 // ----------------------------------------------------------------------------
 function ensureCells(renderer: DomRenderer, count: number): void {
   if (renderer.cells.length === count) return;
+  renderer.cellKeys = Array<string>(count).fill('');
   renderer.cells = Array.from(
     { length: count },
     // ----------------------------------------------------------------------------
@@ -213,6 +233,22 @@ function ensureCells(renderer: DomRenderer, count: number): void {
     },
   );
   renderer.grid.replaceChildren(...renderer.cells);
+}
+
+// ----------------------------------------------------------------------------
+// Construit la signature visuelle stable d'une cellule.
+//
+// Paramètres :
+// - state : état de cellule dont le rendu doit être identifié.
+//
+// Retour :
+// - clé qui change uniquement lorsqu'un élément visuel de la cellule change.
+//
+// Effets de bord :
+// - aucun.
+// ----------------------------------------------------------------------------
+function getCellRenderKey(state: GameState['ceils'][number]): string {
+  return `${state.state}:${state.minesAround}:${state.opening ? 1 : 0}`;
 }
 
 // ----------------------------------------------------------------------------
@@ -367,23 +403,33 @@ export function renderFrame(
   state: GameState,
   options: RenderOptions,
 ): void {
-  ctx.clearRect(0, 0, viewportWidth, viewportHeight);
-  ctx.fillStyle = 'rgb(22, 22, 22)';
-  ctx.fillRect(0, 0, viewportWidth, viewportHeight);
-
   let renderer = renderers.get(ctx.canvas);
   if (!renderer) {
     renderer = createDomRenderer(ctx.canvas);
     renderers.set(ctx.canvas, renderer);
   }
 
+  // Signature du fond Canvas, qui ne varie qu'avec sa taille physique ou logique.
+  const canvasKey = `${viewportWidth}:${viewportHeight}:${ctx.canvas.width}:${ctx.canvas.height}`;
+  if (renderer.canvasKey !== canvasKey) {
+    ctx.clearRect(0, 0, viewportWidth, viewportHeight);
+    ctx.fillStyle = 'rgb(22, 22, 22)';
+    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+    renderer.canvasKey = canvasKey;
+  }
+
   // Constante `scale` utilisée par la responsabilité de ce module.
   const scale = layout.cellSize / 16;
-  renderer.root.style.left = `${layout.topBar.x}px`;
-  renderer.root.style.top = `${layout.topBar.y + 20 * scale}px`;
-  renderer.root.style.setProperty('--ms-board-scale', `${scale}`);
-  renderer.grid.style.gridTemplateColumns = `repeat(${state.columns}, calc(16px * var(--ms-board-scale)))`;
-  renderer.grid.style.gridTemplateRows = `repeat(${state.rows}, calc(16px * var(--ms-board-scale)))`;
+  // Signature de disposition utilisée pour éviter de recalculer les styles de milliers de cellules.
+  const layoutKey = `${layout.topBar.x}:${layout.topBar.y}:${scale}:${state.rows}:${state.columns}`;
+  if (renderer.layoutKey !== layoutKey) {
+    renderer.root.style.left = `${layout.topBar.x}px`;
+    renderer.root.style.top = `${layout.topBar.y + 20 * scale}px`;
+    renderer.root.style.setProperty('--ms-board-scale', `${scale}`);
+    renderer.grid.style.gridTemplateColumns = `repeat(${state.columns}, calc(16px * var(--ms-board-scale)))`;
+    renderer.grid.style.gridTemplateRows = `repeat(${state.rows}, calc(16px * var(--ms-board-scale)))`;
+    renderer.layoutKey = layoutKey;
+  }
 
   setCounter(renderer.leftCounter, state.mines - countFlags(state));
   setCounter(renderer.rightCounter, Math.max(0, options.timerSeconds));
@@ -401,8 +447,14 @@ export function renderFrame(
     // - index : valeur fournie au traitement.
     //
     // Effets de bord :
-    // - aucun.
+    // - met à jour le DOM uniquement lorsque l'apparence de la cellule change.
     // ----------------------------------------------------------------------------
-    (cell, index) => renderCell(renderer.cells[index]!, cell),
+    (cell, index) => {
+      // Signature visuelle de la cellule comparée au dernier rendu connu.
+      const cellKey = getCellRenderKey(cell);
+      if (renderer.cellKeys[index] === cellKey) return;
+      renderCell(renderer.cells[index]!, cell);
+      renderer.cellKeys[index] = cellKey;
+    },
   );
 }

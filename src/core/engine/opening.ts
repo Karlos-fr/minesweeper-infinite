@@ -27,14 +27,18 @@ export function getAutoOpenIndexes(state: GameState, index: number): number[] {
   const { rows, columns, ceils } = state;
   // Constante `queue` utilisée par la responsabilité de ce module.
   const queue = [index];
+  // Ensemble des cellules déjà placées dans la file afin d'éviter les recherches linéaires.
+  const queued = new Set<number>([index]);
   // Constante `visited` utilisée par la responsabilité de ce module.
   const visited = new Set<number>();
   // Constante `result` utilisée par la responsabilité de ce module.
   const result: number[] = [];
 
-  while (queue.length > 0) {
+  let cursor = 0;
+  while (cursor < queue.length) {
     // Constante `current` utilisée par la responsabilité de ce module.
-    const current = queue.shift();
+    const current = queue[cursor];
+    cursor += 1;
     if (current === undefined) break;
 
     // Constante `ceil` utilisée par la responsabilité de ce module.
@@ -57,7 +61,8 @@ export function getAutoOpenIndexes(state: GameState, index: number): number[] {
         // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
         // ----------------------------------------------------------------------------
         (nearIndex) => {
-          if (!visited.has(nearIndex) && !queue.includes(nearIndex)) {
+          if (!visited.has(nearIndex) && !queued.has(nearIndex)) {
+            queued.add(nearIndex);
             queue.push(nearIndex);
           }
         },
