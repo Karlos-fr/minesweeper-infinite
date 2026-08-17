@@ -1,3 +1,9 @@
+// ============================================================================
+// Minesweeper Infinite - Types du domaine de jeu
+// ----------------------------------------------------------------------------
+// Ce fichier définit les états et actions partagés par le moteur. Il reste
+// indépendant du navigateur et du rendu.
+// ============================================================================
 export type CellState = 'cover' | 'flag' | 'unknown' | 'open' | 'die' | 'misflagged' | 'mine';
 
 export type Difficulty = 'Beginner' | 'Intermediate' | 'Expert';

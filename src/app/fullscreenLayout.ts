@@ -1,3 +1,9 @@
+// ============================================================================
+// Minesweeper Infinite - Disposition plein écran
+// ----------------------------------------------------------------------------
+// Ce fichier adapte les options de fenêtre au calcul géométrique du Canvas. Il
+// ne réalise aucun rendu.
+// ============================================================================
 import type { BoardLayout, LayoutOptions, LayoutViewport } from '../canvas/layout';
 import { computeAdaptiveBoardLayout as computeCanvasAdaptiveBoardLayout } from '../canvas/layout';
 
@@ -9,6 +15,7 @@ export interface FullscreenLayoutOptions {
   readonly scale?: number;
 }
 
+// Constante `DEFAULT_FULLSCREEN_LAYOUT_OPTIONS` utilisée par la responsabilité de ce module.
 const DEFAULT_FULLSCREEN_LAYOUT_OPTIONS: Required<Omit<FullscreenLayoutOptions, 'uiChromePx'>> & {
   uiChromePx: number;
 } = {
@@ -19,6 +26,22 @@ const DEFAULT_FULLSCREEN_LAYOUT_OPTIONS: Required<Omit<FullscreenLayoutOptions, 
   scale: 1,
 };
 
+// ----------------------------------------------------------------------------
+// Calcule adaptive plateau disposition.
+//
+// Paramètres :
+// - viewport : valeur fournie au traitement.
+// - rows : valeur fournie au traitement.
+// - columns : valeur fournie au traitement.
+// - uiChromePx : valeur fournie au traitement.
+// - options : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `BoardLayout` produite par le traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 export function computeAdaptiveBoardLayout(
   viewport: LayoutViewport,
   rows: number,
@@ -26,12 +49,17 @@ export function computeAdaptiveBoardLayout(
   uiChromePx: number,
   options: FullscreenLayoutOptions = {},
 ): BoardLayout {
+  // Constante `merged` utilisée par la responsabilité de ce module.
   const merged: Required<FullscreenLayoutOptions> = {
     ...DEFAULT_FULLSCREEN_LAYOUT_OPTIONS,
     ...options,
-    uiChromePx: typeof uiChromePx === 'number' ? uiChromePx : options.uiChromePx ?? DEFAULT_FULLSCREEN_LAYOUT_OPTIONS.uiChromePx,
+    uiChromePx:
+      typeof uiChromePx === 'number'
+        ? uiChromePx
+        : (options.uiChromePx ?? DEFAULT_FULLSCREEN_LAYOUT_OPTIONS.uiChromePx),
   };
 
+  // Constante `normalized` utilisée par la responsabilité de ce module.
   const normalized: LayoutOptions = {
     minCellSize: merged.minCellSize,
     maxCellSize: merged.maxCellSize,

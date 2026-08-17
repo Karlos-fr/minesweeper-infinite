@@ -1,3 +1,9 @@
+// ============================================================================
+// Minesweeper Infinite - Rendu du plateau
+// ----------------------------------------------------------------------------
+// Ce fichier synchronise le Canvas et la couche DOM visuelle avec l'état du
+// jeu. Il ne traite pas les entrées.
+// ============================================================================
 import type { GameState } from '../core/types';
 import type { BoardLayout } from './layout';
 import dead from '../ui/assets/dead.png';
@@ -30,6 +36,7 @@ import digit8 from '../ui/assets/digit8.png';
 import digit9 from '../ui/assets/digit9.png';
 import digitMinus from '../ui/assets/digit-.png';
 
+// Constante `digitSources` utilisée par la responsabilité de ce module.
 const digitSources: Record<string, string> = {
   '0': digit0,
   '1': digit1,
@@ -44,6 +51,7 @@ const digitSources: Record<string, string> = {
   '-': digitMinus,
 };
 
+// Constante `openSources` utilisée par la responsabilité de ce module.
 const openSources = [empty, open1, open2, open3, open4, open5, open6, open7, open8];
 
 interface DomRenderer {
@@ -56,9 +64,23 @@ interface DomRenderer {
   cells: HTMLDivElement[];
 }
 
+// Constante `renderers` utilisée par la responsabilité de ce module.
 const renderers = new WeakMap<HTMLCanvasElement, DomRenderer>();
 
+// ----------------------------------------------------------------------------
+// Formate compteur.
+//
+// Paramètres :
+// - value : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `string` produite par le traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 function formatCounter(value: number): string {
+  // Constante `clamped` utilisée par la responsabilité de ce module.
   const clamped = Math.max(-999, Math.min(999, value));
   if (clamped < 0) {
     return `-${Math.abs(clamped).toString().padStart(2, '0').slice(-2)}`;
@@ -66,42 +88,90 @@ function formatCounter(value: number): string {
   return clamped.toString().padStart(3, '0').slice(-3);
 }
 
+// ----------------------------------------------------------------------------
+// Définit compteur.
+//
+// Paramètres :
+// - container : valeur fournie au traitement.
+// - value : valeur fournie au traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 function setCounter(container: HTMLDivElement, value: number): void {
+  // Constante `chars` utilisée par la responsabilité de ce module.
   const chars = formatCounter(value).split('');
-  const images = chars.map(char => {
-    const image = document.createElement('img');
-    image.src = digitSources[char] ?? digit0;
-    image.alt = char;
-    return image;
-  });
+  // Constante `images` utilisée par la responsabilité de ce module.
+  const images = chars.map(
+    // ----------------------------------------------------------------------------
+    // Exécute le callback associé à map.
+    //
+    // Paramètres :
+    // - char : valeur fournie au traitement.
+    //
+    // Retour :
+    // - valeur de type `HTMLImageElement` produite par le traitement.
+    //
+    // Effets de bord :
+    // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+    // ----------------------------------------------------------------------------
+    (char) => {
+      // Constante `image` utilisée par la responsabilité de ce module.
+      const image = document.createElement('img');
+      image.src = digitSources[char] ?? digit0;
+      image.alt = char;
+      return image;
+    },
+  );
   container.replaceChildren(...images);
 }
 
+// ----------------------------------------------------------------------------
+// Crée dom moteur de rendu.
+//
+// Paramètres :
+// - canvas : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `DomRenderer` produite par le traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 function createDomRenderer(canvas: HTMLCanvasElement): DomRenderer {
+  // Constante `root` utilisée par la responsabilité de ce module.
   const root = document.createElement('div');
   root.className = 'ms-board';
   root.setAttribute('aria-hidden', 'true');
 
+  // Constante `content` utilisée par la responsabilité de ce module.
   const content = document.createElement('section');
   content.className = 'ms-board__content';
+  // Constante `score` utilisée par la responsabilité de ce module.
   const score = document.createElement('div');
   score.className = 'ms-board__score';
+  // Constante `leftCounter` utilisée par la responsabilité de ce module.
   const leftCounter = document.createElement('div');
   leftCounter.className = 'ms-board__digits';
+  // Constante `rightCounter` utilisée par la responsabilité de ce module.
   const rightCounter = document.createElement('div');
   rightCounter.className = 'ms-board__digits';
+  // Constante `faceOuter` utilisée par la responsabilité de ce module.
   const faceOuter = document.createElement('div');
   faceOuter.className = 'ms-board__face-outer';
+  // Constante `face` utilisée par la responsabilité de ce module.
   const face = document.createElement('button');
   face.type = 'button';
   face.className = 'ms-board__face';
   face.tabIndex = -1;
+  // Constante `faceImage` utilisée par la responsabilité de ce module.
   const faceImage = document.createElement('img');
   faceImage.alt = '';
   face.appendChild(faceImage);
   faceOuter.appendChild(face);
   score.append(leftCounter, faceOuter, rightCounter);
 
+  // Constante `grid` utilisée par la responsabilité de ce module.
   const grid = document.createElement('div');
   grid.className = 'ms-board__grid';
   content.append(score, grid);
@@ -111,19 +181,54 @@ function createDomRenderer(canvas: HTMLCanvasElement): DomRenderer {
   return { root, leftCounter, rightCounter, face, faceImage, grid, cells: [] };
 }
 
+// ----------------------------------------------------------------------------
+// Garantit cellules.
+//
+// Paramètres :
+// - renderer : valeur fournie au traitement.
+// - count : valeur fournie au traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 function ensureCells(renderer: DomRenderer, count: number): void {
   if (renderer.cells.length === count) return;
-  renderer.cells = Array.from({ length: count }, () => {
-    const cell = document.createElement('div');
-    cell.className = 'ms-board__cell';
-    renderer.grid.appendChild(cell);
-    return cell;
-  });
+  renderer.cells = Array.from(
+    { length: count },
+    // ----------------------------------------------------------------------------
+    // Exécute le callback associé à from.
+    //
+    // Retour :
+    // - valeur de type `HTMLDivElement` produite par le traitement.
+    //
+    // Effets de bord :
+    // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+    // ----------------------------------------------------------------------------
+    () => {
+      // Constante `cell` utilisée par la responsabilité de ce module.
+      const cell = document.createElement('div');
+      cell.className = 'ms-board__cell';
+      renderer.grid.appendChild(cell);
+      return cell;
+    },
+  );
   renderer.grid.replaceChildren(...renderer.cells);
 }
 
+// ----------------------------------------------------------------------------
+// Effectue le rendu de cellule.
+//
+// Paramètres :
+// - cell : valeur fournie au traitement.
+// - state : valeur fournie au traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 function renderCell(cell: HTMLDivElement, state: GameState['ceils'][number]): void {
+  // Constante `raised` utilisée par la responsabilité de ce module.
   const raised = (state.state === 'cover' || state.state === 'unknown') && !state.opening;
+  // Constante `background` utilisée par la responsabilité de ce module.
   const background = document.createElement('span');
   background.className = raised ? 'ms-board__cell-bg is-covered' : 'ms-board__cell-bg is-open';
 
@@ -156,14 +261,41 @@ function renderCell(cell: HTMLDivElement, state: GameState['ceils'][number]): vo
     return;
   }
 
+  // Constante `image` utilisée par la responsabilité de ce module.
   const image = document.createElement('img');
   image.src = source;
   image.alt = '';
   cell.replaceChildren(background, image);
 }
 
+// ----------------------------------------------------------------------------
+// Compte flags.
+//
+// Paramètres :
+// - state : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `number` produite par le traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 function countFlags(state: GameState): number {
-  return state.ceils.filter(cell => cell.state === 'flag' || cell.state === 'misflagged').length;
+  return state.ceils.filter(
+    // ----------------------------------------------------------------------------
+    // Exécute le callback associé à filter.
+    //
+    // Paramètres :
+    // - cell : valeur fournie au traitement.
+    //
+    // Retour :
+    // - valeur de type `boolean` produite par le traitement.
+    //
+    // Effets de bord :
+    // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+    // ----------------------------------------------------------------------------
+    (cell) => cell.state === 'flag' || cell.state === 'misflagged',
+  ).length;
 }
 
 export interface RenderOptions {
@@ -171,17 +303,62 @@ export interface RenderOptions {
   readonly facePressed?: boolean;
 }
 
+// ----------------------------------------------------------------------------
+// Réagit à images loaded.
+//
+// Paramètres :
+// - callback : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `() => void` produite par le traitement.
+//
+// Effets de bord :
+// - aucun.
+// ----------------------------------------------------------------------------
 export function onImagesLoaded(callback: () => void): () => void {
   callback();
+  // ----------------------------------------------------------------------------
+  // Exécute le traitement callback.
+  //
+  // Retour :
+  // - valeur de type `undefined` produite par le traitement.
+  //
+  // Effets de bord :
+  // - aucun.
+  // ----------------------------------------------------------------------------
   return () => undefined;
 }
 
+// ----------------------------------------------------------------------------
+// Libère moteur de rendu.
+//
+// Paramètres :
+// - canvas : valeur fournie au traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 export function disposeRenderer(canvas: HTMLCanvasElement): void {
+  // Constante `renderer` utilisée par la responsabilité de ce module.
   const renderer = renderers.get(canvas);
   renderer?.root.remove();
   renderers.delete(canvas);
 }
 
+// ----------------------------------------------------------------------------
+// Effectue le rendu de image de rendu.
+//
+// Paramètres :
+// - ctx : valeur fournie au traitement.
+// - viewportWidth : valeur fournie au traitement.
+// - viewportHeight : valeur fournie au traitement.
+// - layout : valeur fournie au traitement.
+// - state : valeur fournie au traitement.
+// - options : valeur fournie au traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 export function renderFrame(
   ctx: CanvasRenderingContext2D,
   viewportWidth: number,
@@ -200,6 +377,7 @@ export function renderFrame(
     renderers.set(ctx.canvas, renderer);
   }
 
+  // Constante `scale` utilisée par la responsabilité de ce module.
   const scale = layout.cellSize / 16;
   renderer.root.style.left = `${layout.topBar.x}px`;
   renderer.root.style.top = `${layout.topBar.y + 20 * scale}px`;
@@ -211,14 +389,20 @@ export function renderFrame(
   setCounter(renderer.rightCounter, Math.max(0, options.timerSeconds));
   renderer.face.classList.toggle('is-pressed', options.facePressed ?? false);
   renderer.faceImage.src =
-    state.status === 'died'
-      ? dead
-      : state.status === 'won'
-        ? win
-        : options.facePressed
-          ? ohh
-          : smile;
+    state.status === 'died' ? dead : state.status === 'won' ? win : options.facePressed ? ohh : smile;
 
   ensureCells(renderer, state.ceils.length);
-  state.ceils.forEach((cell, index) => renderCell(renderer.cells[index]!, cell));
+  state.ceils.forEach(
+    // ----------------------------------------------------------------------------
+    // Exécute le callback associé à for each.
+    //
+    // Paramètres :
+    // - cell : valeur fournie au traitement.
+    // - index : valeur fournie au traitement.
+    //
+    // Effets de bord :
+    // - aucun.
+    // ----------------------------------------------------------------------------
+    (cell, index) => renderCell(renderer.cells[index]!, cell),
+  );
 }

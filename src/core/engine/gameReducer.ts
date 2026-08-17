@@ -1,3 +1,9 @@
+// ============================================================================
+// Minesweeper Infinite - Reducer du jeu
+// ----------------------------------------------------------------------------
+// Ce fichier applique les actions métier et produit de nouveaux états. Il ne
+// déclenche aucun effet de bord navigateur.
+// ============================================================================
 import { Cell, Difficulty, GameAction, GameState } from '../types';
 import { getDifficultyConfig } from './gridFactory';
 import { createEmptyGrid, createInitialGameState } from './gridFactory';
@@ -12,23 +18,59 @@ interface ClearMapPayload {
   readonly mines?: number;
 }
 
-function replaceCeils(
-  ceils: readonly Cell[],
-  indexes: readonly number[],
-  transform: (cell: Cell) => Cell,
-): Cell[] {
+// ----------------------------------------------------------------------------
+// Remplace cellules.
+//
+// Paramètres :
+// - ceils : valeur fournie au traitement.
+// - indexes : valeur fournie au traitement.
+// - transform : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `Cell[]` produite par le traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
+function replaceCeils(ceils: readonly Cell[], indexes: readonly number[], transform: (cell: Cell) => Cell): Cell[] {
   if (indexes.length === 0) return [...ceils];
 
+  // Constante `next` utilisée par la responsabilité de ce module.
   const next = [...ceils];
-  indexes.forEach(index => {
-    const current = next[index];
-    if (!current) return;
-    next[index] = transform(current);
-  });
+  indexes.forEach(
+    // ----------------------------------------------------------------------------
+    // Exécute le callback associé à for each.
+    //
+    // Paramètres :
+    // - index : valeur fournie au traitement.
+    //
+    // Effets de bord :
+    // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+    // ----------------------------------------------------------------------------
+    (index) => {
+      // Constante `current` utilisée par la responsabilité de ce module.
+      const current = next[index];
+      if (!current) return;
+      next[index] = transform(current);
+    },
+  );
 
   return next;
 }
 
+// ----------------------------------------------------------------------------
+// Réinitialise to difficulté.
+//
+// Paramètres :
+// - state : valeur fournie au traitement.
+// - difficulty : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `GameState` produite par le traitement.
+//
+// Effets de bord :
+// - aucun.
+// ----------------------------------------------------------------------------
 function resetToDifficulty(state: GameState, difficulty: Difficulty): GameState {
   return {
     ...createInitialGameState(difficulty),
@@ -36,7 +78,21 @@ function resetToDifficulty(state: GameState, difficulty: Difficulty): GameState 
   };
 }
 
+// ----------------------------------------------------------------------------
+// Limite positive integer.
+//
+// Paramètres :
+// - value : valeur fournie au traitement.
+// - fallback : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `number` produite par le traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 function clampPositiveInteger(value: number, fallback: number): number {
+  // Constante `sanitized` utilisée par la responsabilité de ce module.
   const sanitized = Math.trunc(value);
   if (!Number.isFinite(sanitized)) {
     return fallback;
@@ -44,8 +100,23 @@ function clampPositiveInteger(value: number, fallback: number): number {
   return Math.max(1, sanitized);
 }
 
+// ----------------------------------------------------------------------------
+// Limite mine count.
+//
+// Paramètres :
+// - mines : valeur fournie au traitement.
+// - total : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `number` produite par le traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 function clampMineCount(mines: number, total: number): number {
+  // Constante `maxMines` utilisée par la responsabilité de ce module.
   const maxMines = Math.max(0, total - 1);
+  // Constante `normalizedMines` utilisée par la responsabilité de ce module.
   const normalizedMines = clampPositiveInteger(mines, 0);
   if (maxMines <= 0) {
     return 0;
@@ -53,6 +124,19 @@ function clampMineCount(mines: number, total: number): number {
   return Math.max(1, Math.min(normalizedMines, maxMines));
 }
 
+// ----------------------------------------------------------------------------
+// Réinitialise to custom configuration.
+//
+// Paramètres :
+// - state : valeur fournie au traitement.
+// - payload : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `GameState` produite par le traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 function resetToCustomConfig(state: GameState, payload?: ClearMapPayload): GameState {
   if (
     !payload ||
@@ -77,12 +161,14 @@ function resetToCustomConfig(state: GameState, payload?: ClearMapPayload): GameS
     return resetToDifficulty(state, payload.difficulty);
   }
 
+  // Constante `rows` utilisée par la responsabilité de ce module.
   const rows = clampPositiveInteger(payload.rows ?? state.rows, state.rows);
+  // Constante `columns` utilisée par la responsabilité de ce module.
   const columns = clampPositiveInteger(payload.columns ?? state.columns, state.columns);
+  // Constante `total` utilisée par la responsabilité de ce module.
   const total = rows * columns;
-  const mines = payload.mines === undefined
-    ? clampMineCount(state.mines, total)
-    : clampMineCount(payload.mines, total);
+  // Constante `mines` utilisée par la responsabilité de ce module.
+  const mines = payload.mines === undefined ? clampMineCount(state.mines, total) : clampMineCount(payload.mines, total);
 
   return {
     ...state,
@@ -95,6 +181,19 @@ function resetToCustomConfig(state: GameState, payload?: ClearMapPayload): GameS
   };
 }
 
+// ----------------------------------------------------------------------------
+// Exécute le traitement jeu reducer.
+//
+// Paramètres :
+// - state : valeur fournie au traitement.
+// - action : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `GameState` produite par le traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'CLEAR_MAP':
@@ -106,7 +205,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'START_GAME': {
+      // Constante `{ index }` utilisée par la responsabilité de ce module.
       const { index } = action.payload;
+      // Constante `ceils` utilisée par la responsabilité de ce module.
       const ceils = placeMines({
         rows: state.rows,
         columns: state.columns,
@@ -123,9 +224,28 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'OPEN_CEIL': {
+      // Constante `{ index }` utilisée par la responsabilité de ce module.
       const { index } = action.payload;
+      // Constante `indexes` utilisée par la responsabilité de ce module.
       const indexes = getAutoOpenIndexes(state, index);
-      const ceils = replaceCeils(state.ceils, indexes, ceil => ({ ...ceil, state: 'open' }));
+      // Constante `ceils` utilisée par la responsabilité de ce module.
+      const ceils = replaceCeils(
+        state.ceils,
+        indexes,
+        // ----------------------------------------------------------------------------
+        // Remplace cellules callback.
+        //
+        // Paramètres :
+        // - ceil : valeur fournie au traitement.
+        //
+        // Retour :
+        // - valeur de type `{ state: "open"; minesAround: number; opening: boolean; }` produite par le traitement.
+        //
+        // Effets de bord :
+        // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+        // ----------------------------------------------------------------------------
+        (ceil) => ({ ...ceil, state: 'open' }),
+      );
 
       return {
         ...state,
@@ -134,7 +254,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'CHANGE_CEIL_STATE': {
+      // Constante `{ index }` utilisée par la responsabilité de ce module.
       const { index } = action.payload;
+      // Constante `target` utilisée par la responsabilité de ce module.
       const target = state.ceils[index];
       if (!target) return state;
 
@@ -153,6 +275,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           return state;
       }
 
+      // Constante `next` utilisée par la responsabilité de ce module.
       const next = [...state.ceils];
       next[index] = {
         ...target,
@@ -166,27 +289,43 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'GAME_OVER': {
+      // Constante `clickedIndex` utilisée par la responsabilité de ce module.
       const clickedIndex = action.payload.index;
-      const ceils = state.ceils.map((ceil): Cell => {
-        if (ceil.minesAround < 0 && ceil.state !== 'flag') {
+      // Constante `ceils` utilisée par la responsabilité de ce module.
+      const ceils = state.ceils.map(
+        // ----------------------------------------------------------------------------
+        // Exécute le callback associé à map.
+        //
+        // Paramètres :
+        // - ceil : valeur fournie au traitement.
+        //
+        // Retour :
+        // - valeur de type `Cell` produite par le traitement.
+        //
+        // Effets de bord :
+        // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+        // ----------------------------------------------------------------------------
+        (ceil): Cell => {
+          if (ceil.minesAround < 0 && ceil.state !== 'flag') {
+            return {
+              ...ceil,
+              state: 'mine',
+            };
+          }
+
+          if (ceil.state === 'flag' && ceil.minesAround >= 0) {
+            return {
+              ...ceil,
+              state: 'misflagged',
+            };
+          }
+
           return {
             ...ceil,
-            state: 'mine',
+            opening: false,
           };
-        }
-
-        if (ceil.state === 'flag' && ceil.minesAround >= 0) {
-          return {
-            ...ceil,
-            state: 'misflagged',
-          };
-        }
-
-        return {
-          ...ceil,
-          opening: false,
-        };
-      });
+        },
+      );
 
       if (!ceils[clickedIndex]) {
         throw new Error('Invalid clicked mine index');
@@ -205,7 +344,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'WON': {
+      // Constante `ceils` utilisée par la responsabilité de ce module.
       const ceils = state.ceils.map(
+        // ----------------------------------------------------------------------------
+        // Exécute le callback associé à map.
+        //
+        // Paramètres :
+        // - ceil : valeur fournie au traitement.
+        //
+        // Retour :
+        // - valeur de type `Cell` produite par le traitement.
+        //
+        // Effets de bord :
+        // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+        // ----------------------------------------------------------------------------
         (ceil): Cell =>
           ceil.minesAround >= 0
             ? {
@@ -226,11 +378,27 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'OPENING_CEIL': {
+      // Constante `{ index }` utilisée par la responsabilité de ce module.
       const { index } = action.payload;
-      const ceils = state.ceils.map(ceil => ({
-        ...ceil,
-        opening: false,
-      }));
+      // Constante `ceils` utilisée par la responsabilité de ce module.
+      const ceils = state.ceils.map(
+        // ----------------------------------------------------------------------------
+        // Exécute le callback associé à map.
+        //
+        // Paramètres :
+        // - ceil : valeur fournie au traitement.
+        //
+        // Retour :
+        // - valeur de type `{ opening: boolean; state: CellState; minesAround: number; }` produite par le traitement.
+        //
+        // Effets de bord :
+        // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+        // ----------------------------------------------------------------------------
+        (ceil) => ({
+          ...ceil,
+          opening: false,
+        }),
+      );
 
       if (!ceils[index]) {
         return state;
@@ -248,24 +416,52 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'OPENING_CEILS': {
+      // Constante `{ index }` utilisée par la responsabilité de ce module.
       const { index } = action.payload;
+      // Constante `neighbors` utilisée par la responsabilité de ce module.
       const neighbors = getNeighborIndexes(index, state.rows, state.columns);
-      const ceils = state.ceils.map(ceil => ({
-        ...ceil,
-        opening: false,
-      }));
+      // Constante `ceils` utilisée par la responsabilité de ce module.
+      const ceils = state.ceils.map(
+        // ----------------------------------------------------------------------------
+        // Exécute le callback associé à map.
+        //
+        // Paramètres :
+        // - ceil : valeur fournie au traitement.
+        //
+        // Retour :
+        // - valeur de type `{ opening: boolean; state: CellState; minesAround: number; }` produite par le traitement.
+        //
+        // Effets de bord :
+        // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+        // ----------------------------------------------------------------------------
+        (ceil) => ({
+          ...ceil,
+          opening: false,
+        }),
+      );
 
       if (!ceils[index]) {
         return state;
       }
 
-      [...neighbors, index].forEach(nearIndex => {
-        if (!ceils[nearIndex]) return;
-        ceils[nearIndex] = {
-          ...ceils[nearIndex],
-          opening: true,
-        };
-      });
+      [...neighbors, index].forEach(
+        // ----------------------------------------------------------------------------
+        // Exécute le callback associé à for each.
+        //
+        // Paramètres :
+        // - nearIndex : valeur fournie au traitement.
+        //
+        // Effets de bord :
+        // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+        // ----------------------------------------------------------------------------
+        (nearIndex) => {
+          if (!ceils[nearIndex]) return;
+          ceils[nearIndex] = {
+            ...ceils[nearIndex],
+            opening: true,
+          };
+        },
+      );
 
       return {
         ...state,

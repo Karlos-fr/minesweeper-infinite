@@ -1,3 +1,9 @@
+// ============================================================================
+// Minesweeper Infinite - Configuration des difficultés
+// ----------------------------------------------------------------------------
+// Ce fichier décrit les dimensions et le nombre de mines des modes classiques.
+// Il ne crée aucun état de partie.
+// ============================================================================
 import { Difficulty } from './types';
 
 export interface DifficultyConfig {
@@ -7,6 +13,7 @@ export interface DifficultyConfig {
   readonly mines: number;
 }
 
+// Constante `CONFIG` utilisée par la responsabilité de ce module.
 export const CONFIG: Record<Difficulty, DifficultyConfig> = {
   Beginner: {
     rows: 9,

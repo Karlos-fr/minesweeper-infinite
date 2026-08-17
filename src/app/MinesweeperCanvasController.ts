@@ -1,3 +1,9 @@
+// ============================================================================
+// Minesweeper Infinite - Contrôleur du plateau
+// ----------------------------------------------------------------------------
+// Ce fichier orchestre le store, les entrées, le rendu, le son et le temps.
+// Les règles métier restent dans core/engine.
+// ============================================================================
 import type { Difficulty } from '../core/types';
 import { computeAdaptiveBoardLayout } from './fullscreenLayout';
 import { type BoardLayout } from '../canvas/layout';
@@ -19,6 +25,7 @@ export interface MinesweeperCanvasController {
 
 export type GridZoom = 1 | 1.5 | 2;
 
+// Constante `DEFAULT_LAYOUT_OPTIONS` utilisée par la responsabilité de ce module.
 const DEFAULT_LAYOUT_OPTIONS = {
   uiChromePx: 14,
   minCellSize: 8,
@@ -46,32 +53,85 @@ interface FillToWindowConfig {
   mines: number;
 }
 
+// ----------------------------------------------------------------------------
+// Crée minesweeper canvas controller.
+//
+// Paramètres :
+// - host : valeur fournie au traitement.
+// - options : valeur fournie au traitement.
+//
+// Retour :
+// - valeur de type `MinesweeperCanvasController` produite par le traitement.
+//
+// Effets de bord :
+// - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+// ----------------------------------------------------------------------------
 export function createMinesweeperCanvasController(
   host: CanvasHost,
   options: MinesweeperCanvasControllerOptions = { difficulty: 'Beginner' },
 ): MinesweeperCanvasController {
+  // Constante `store` utilisée par la responsabilité de ce module.
   const store = createGameStateStore(options.difficulty);
+  // Constante `{ canvas, ctx }` utilisée par la responsabilité de ce module.
   const { canvas, ctx } = host;
+  // Constante `layoutOptions` utilisée par la responsabilité de ce module.
   const layoutOptions = {
     ...DEFAULT_LAYOUT_OPTIONS,
     ...options.layout,
   };
+  // ----------------------------------------------------------------------------
+  // Joue son.
+  //
+  // Paramètres :
+  // - src : valeur fournie au traitement.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const playSound = (src: string): void => {
     try {
+      // Constante `audio` utilisée par la responsabilité de ce module.
       const audio = new Audio(src);
       audio.volume = 0.8;
+      // Constante `pending` utilisée par la responsabilité de ce module.
       const pending = audio.play();
       if (typeof pending?.catch === 'function') {
-        pending.catch(() => {
-          // Browser audio policies can block autoplay before user interaction.
-        });
+        pending.catch(
+          // ----------------------------------------------------------------------------
+          // Exécute le callback associé à catch.
+          //
+          // Effets de bord :
+          // - aucun.
+          // ----------------------------------------------------------------------------
+          () => {
+            // Les règles audio du navigateur peuvent bloquer la lecture avant la première interaction.
+          },
+        );
       }
     } catch {
-      // Ignore audio errors to avoid impacting gameplay.
+      // Les erreurs audio sont ignorées afin de ne pas interrompre la partie.
     }
   };
+  // ----------------------------------------------------------------------------
+  // Joue lose son.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const playLoseSound = (): void => playSound(loseSound);
+  // ----------------------------------------------------------------------------
+  // Joue tick son.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const playTickSound = (): void => playSound(tickSound);
+  // ----------------------------------------------------------------------------
+  // Joue victoire son.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const playWinSound = (): void => playSound(winSound);
 
   let facePressed = false;
@@ -85,8 +145,26 @@ export function createMinesweeperCanvasController(
   let fillDensity: number | null = null;
   let layoutScale: GridZoom = options.layout?.scale ?? 1;
 
+  // ----------------------------------------------------------------------------
+  // Retourne disposition échelle.
+  //
+  // Retour :
+  // - valeur de type `GridZoom` produite par le traitement.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const getLayoutScale = (): GridZoom => layoutScale;
 
+  // ----------------------------------------------------------------------------
+  // Retourne resolved disposition options.
+  //
+  // Retour :
+  // - valeur de type `Required<CanvasControllerLayoutOptions>` produite par le traitement.
+  //
+  // Effets de bord :
+  // - aucun.
+  // ----------------------------------------------------------------------------
   const getResolvedLayoutOptions = (): Required<CanvasControllerLayoutOptions> => ({
     uiChromePx: Math.round(layoutOptions.uiChromePx),
     minCellSize: layoutOptions.minCellSize,
@@ -95,17 +173,41 @@ export function createMinesweeperCanvasController(
     scale: getLayoutScale(),
   });
 
+  // ----------------------------------------------------------------------------
+  // Retourne sûres zone d'affichage.
+  //
+  // Retour :
+  // - valeur de type `{ width: number; height: number; }` produite par le traitement.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const getSafeViewport = (): { width: number; height: number } => ({
     width: Math.max(1, canvas.clientWidth),
     height: Math.max(1, canvas.clientHeight),
   });
 
+  // ----------------------------------------------------------------------------
+  // Retourne cellule density.
+  //
+  // Paramètres :
+  // - state : valeur fournie au traitement.
+  //
+  // Retour :
+  // - valeur de type `number` produite par le traitement.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const getCellDensity = (state: ReturnType<typeof store.getState>): number => {
+    // Constante `total` utilisée par la responsabilité de ce module.
     const total = Math.max(1, state.rows * state.columns);
+    // Constante `density` utilisée par la responsabilité de ce module.
     const density = state.mines / total;
     return density > 0 && density < 1 ? density : 0.156;
   };
 
+  // Constante `initialScale` utilisée par la responsabilité de ce module.
   const initialScale = getLayoutScale();
   let layout: BoardLayout = computeAdaptiveBoardLayout(
     { width: host.canvas.clientWidth, height: host.canvas.clientHeight },
@@ -118,26 +220,52 @@ export function createMinesweeperCanvasController(
     },
   );
 
+  // ----------------------------------------------------------------------------
+  // Calcule remplissage configuration.
+  //
+  // Retour :
+  // - valeur de type `FillToWindowConfig` produite par le traitement.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const computeFillConfig = (): FillToWindowConfig => {
+    // Constante `state` utilisée par la responsabilité de ce module.
     const state = store.getState();
+    // Constante `density` utilisée par la responsabilité de ce module.
     const density = fillDensity ?? getCellDensity(state);
+    // Constante `viewport` utilisée par la responsabilité de ce module.
     const viewport = getSafeViewport();
+    // Constante `resolvedScale` utilisée par la responsabilité de ce module.
     const resolvedScale = getLayoutScale();
+    // Constante `safeWidth` utilisée par la responsabilité de ce module.
     const safeWidth = Math.max(1, Math.round(viewport.width - Math.round(layoutOptions.padding * resolvedScale) * 2));
+    // Constante `safeHeight` utilisée par la responsabilité de ce module.
     const safeHeight = Math.max(1, Math.round(viewport.height - Math.round(layoutOptions.padding * resolvedScale) * 2));
+    // Constante `boardWidth` utilisée par la responsabilité de ce module.
     const boardWidth = Math.max(1, safeWidth - Math.round(19 * resolvedScale));
+    // Constante `boardHeight` utilisée par la responsabilité de ce module.
     const boardHeight = Math.max(1, safeHeight - Math.round(78 * resolvedScale));
 
+    // Constante `minCellSize` utilisée par la responsabilité de ce module.
     const minCellSize = Math.max(4, Math.round(layoutOptions.minCellSize * resolvedScale));
+    // Constante `maxCellSize` utilisée par la responsabilité de ce module.
     const maxCellSize = Math.max(minCellSize, Math.round(layoutOptions.maxCellSize * resolvedScale));
 
+    // Constante `bestCellSize` utilisée par la responsabilité de ce module.
     const bestCellSize = maxCellSize;
+    // Constante `bestRows` utilisée par la responsabilité de ce module.
     const bestRows = Math.max(1, Math.floor(boardHeight / bestCellSize));
+    // Constante `bestColumns` utilisée par la responsabilité de ce module.
     const bestColumns = Math.max(1, Math.floor(boardWidth / bestCellSize));
 
+    // Constante `total` utilisée par la responsabilité de ce module.
     const total = bestRows * bestColumns;
+    // Constante `rawMines` utilisée par la responsabilité de ce module.
     const rawMines = Math.round(total * density);
+    // Constante `maxMines` utilisée par la responsabilité de ce module.
     const maxMines = Math.max(0, total - 1);
+    // Constante `mines` utilisée par la responsabilité de ce module.
     const mines = total <= 1 ? 0 : Math.max(1, Math.min(rawMines, maxMines));
 
     return {
@@ -147,7 +275,23 @@ export function createMinesweeperCanvasController(
     };
   };
 
-  const hasOpenedCell = (previous: ReturnType<typeof store.getState>, next: ReturnType<typeof store.getState>): boolean => {
+  // ----------------------------------------------------------------------------
+  // Indique si opened cellule.
+  //
+  // Paramètres :
+  // - previous : valeur fournie au traitement.
+  // - next : valeur fournie au traitement.
+  //
+  // Retour :
+  // - valeur de type `boolean` produite par le traitement.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
+  const hasOpenedCell = (
+    previous: ReturnType<typeof store.getState>,
+    next: ReturnType<typeof store.getState>,
+  ): boolean => {
     if (previous.status === 'won' || previous.status === 'died' || next.status === 'won' || next.status === 'died') {
       return false;
     }
@@ -161,8 +305,18 @@ export function createMinesweeperCanvasController(
     return false;
   };
 
+  // ----------------------------------------------------------------------------
+  // Applique remplissage to fenêtre.
+  //
+  // Paramètres :
+  // - force : valeur fournie au traitement.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const applyFillToWindow = (force = false): void => {
     if (!isFillToWindow) return;
+    // Constante `nextConfig` utilisée par la responsabilité de ce module.
     const nextConfig = computeFillConfig();
     if (
       force ||
@@ -176,6 +330,12 @@ export function createMinesweeperCanvasController(
     }
   };
 
+  // ----------------------------------------------------------------------------
+  // Arrête chronomètre.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const stopTimer = (): void => {
     if (timerInterval !== undefined) {
       window.clearInterval(timerInterval);
@@ -183,17 +343,41 @@ export function createMinesweeperCanvasController(
     }
   };
 
+  // ----------------------------------------------------------------------------
+  // Démarre chronomètre.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const startTimer = (): void => {
     if (timerInterval !== undefined) return;
-    timerInterval = window.setInterval(() => {
-      timerSeconds += 1;
-      render();
-    }, 1000);
+    timerInterval = window.setInterval(
+      // ----------------------------------------------------------------------------
+      // Définit interval callback.
+      //
+      // Effets de bord :
+      // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+      // ----------------------------------------------------------------------------
+      () => {
+        timerSeconds += 1;
+        render();
+      },
+      1000,
+    );
   };
 
+  // ----------------------------------------------------------------------------
+  // Effectue le rendu de le traitement demandé.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   function render(): void {
+    // Constante `state` utilisée par la responsabilité de ce module.
     const state = store.getState();
+    // Constante `resolvedScale` utilisée par la responsabilité de ce module.
     const resolvedScale = getLayoutScale();
+    // Constante `dynamicLayoutOptions` utilisée par la responsabilité de ce module.
     const dynamicLayoutOptions = getResolvedLayoutOptions();
     layout = computeAdaptiveBoardLayout(
       {
@@ -209,19 +393,21 @@ export function createMinesweeperCanvasController(
       },
     );
     options.onLayoutChange?.(layout);
-    renderFrame(
-      ctx,
-      canvas.clientWidth,
-      canvas.clientHeight,
-      layout,
-      state,
-      {
-        timerSeconds: Math.max(0, timerSeconds),
-        facePressed,
-      },
-    );
+    renderFrame(ctx, canvas.clientWidth, canvas.clientHeight, layout, state, {
+      timerSeconds: Math.max(0, timerSeconds),
+      facePressed,
+    });
   }
 
+  // ----------------------------------------------------------------------------
+  // Réagit à store update.
+  //
+  // Paramètres :
+  // - state : valeur fournie au traitement.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   function onStoreUpdate(state: ReturnType<typeof store.getState>): void {
     if (state.status === 'won' && previousStatus !== 'won') {
       playWinSound();
@@ -257,41 +443,129 @@ export function createMinesweeperCanvasController(
     render();
   }
 
+  // Constante `unsubscribe` utilisée par la responsabilité de ce module.
   const unsubscribe = store.subscribe(onStoreUpdate);
   unregisterImagesLoaded = onImagesLoaded(render);
 
+  // ----------------------------------------------------------------------------
+  // Réagit à visage press.
+  //
+  // Paramètres :
+  // - pressed : valeur fournie au traitement.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const onFacePress = (pressed: boolean): void => {
     facePressed = pressed;
     render();
   };
 
+  // Constante `input` utilisée par la responsabilité de ce module.
   const input = bindCanvasInput(
     canvas,
+    // ----------------------------------------------------------------------------
+    // Associe canvas entrée callback.
+    //
+    // Retour :
+    // - valeur de type `BoardLayout` produite par le traitement.
+    //
+    // Effets de bord :
+    // - aucun.
+    // ----------------------------------------------------------------------------
     () => layout,
     {
+      // ----------------------------------------------------------------------------
+      // Indique si grille interactive.
+      //
+      // Retour :
+      // - valeur de type `boolean` produite par le traitement.
+      //
+      // Effets de bord :
+      // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+      // ----------------------------------------------------------------------------
       isGridInteractive: () => {
+        // Constante `status` utilisée par la responsabilité de ce module.
         const status = store.getState().status;
         return status !== 'won' && status !== 'died';
       },
-      onOpenCell: index => {
+      // ----------------------------------------------------------------------------
+      // Réagit à ouverte cellule.
+      //
+      // Paramètres :
+      // - index : valeur fournie au traitement.
+      //
+      // Effets de bord :
+      // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+      // ----------------------------------------------------------------------------
+      onOpenCell: (index) => {
         store.open(index);
       },
-      onChordCell: index => {
+      // ----------------------------------------------------------------------------
+      // Réagit à chord cellule.
+      //
+      // Paramètres :
+      // - index : valeur fournie au traitement.
+      //
+      // Effets de bord :
+      // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+      // ----------------------------------------------------------------------------
+      onChordCell: (index) => {
         store.openNeighbours(index);
       },
-      onFlagCell: index => {
+      // ----------------------------------------------------------------------------
+      // Réagit à drapeau cellule.
+      //
+      // Paramètres :
+      // - index : valeur fournie au traitement.
+      //
+      // Effets de bord :
+      // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+      // ----------------------------------------------------------------------------
+      onFlagCell: (index) => {
         store.toggleFlag(index);
       },
-      onPreviewSingle: index => {
+      // ----------------------------------------------------------------------------
+      // Réagit à preview single.
+      //
+      // Paramètres :
+      // - index : valeur fournie au traitement.
+      //
+      // Effets de bord :
+      // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+      // ----------------------------------------------------------------------------
+      onPreviewSingle: (index) => {
         store.dispatch({ type: 'OPENING_CEIL', payload: { index } });
       },
-      onPreviewMulti: index => {
+      // ----------------------------------------------------------------------------
+      // Réagit à preview multi.
+      //
+      // Paramètres :
+      // - index : valeur fournie au traitement.
+      //
+      // Effets de bord :
+      // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+      // ----------------------------------------------------------------------------
+      onPreviewMulti: (index) => {
         store.dispatch({ type: 'OPENING_CEILS', payload: { index } });
       },
+      // ----------------------------------------------------------------------------
+      // Réagit à preview clear.
+      //
+      // Effets de bord :
+      // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+      // ----------------------------------------------------------------------------
       onPreviewClear: () => {
         store.dispatch({ type: 'OPENING_CEIL', payload: { index: -1 } });
       },
+      // ----------------------------------------------------------------------------
+      // Réagit à reset.
+      //
+      // Effets de bord :
+      // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+      // ----------------------------------------------------------------------------
       onReset: () => {
+        // Constante `current` utilisée par la responsabilité de ce module.
         const current = store.getState();
         store.reset(
           isFillToWindow
@@ -307,11 +581,26 @@ export function createMinesweeperCanvasController(
     },
   );
 
-  const resizeObserver = new ResizeObserver(() => {
-    render();
-  });
+  // Constante `resizeObserver` utilisée par la responsabilité de ce module.
+  const resizeObserver = new ResizeObserver(
+    // ----------------------------------------------------------------------------
+    // Exécute le traitement callback.
+    //
+    // Effets de bord :
+    // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+    // ----------------------------------------------------------------------------
+    () => {
+      render();
+    },
+  );
   resizeObserver.observe(canvas);
 
+  // ----------------------------------------------------------------------------
+  // Traite fenêtre resize.
+  //
+  // Effets de bord :
+  // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+  // ----------------------------------------------------------------------------
   const handleWindowResize = (): void => {
     if (isFillToWindow) {
       applyFillToWindow();
@@ -324,10 +613,25 @@ export function createMinesweeperCanvasController(
   render();
 
   return {
+    // ----------------------------------------------------------------------------
+    // Démarre le traitement demandé.
+    //
+    // Effets de bord :
+    // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+    // ----------------------------------------------------------------------------
     start: () => {
       render();
     },
-    setDifficulty: difficulty => {
+    // ----------------------------------------------------------------------------
+    // Définit difficulté.
+    //
+    // Paramètres :
+    // - difficulty : valeur fournie au traitement.
+    //
+    // Effets de bord :
+    // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+    // ----------------------------------------------------------------------------
+    setDifficulty: (difficulty) => {
       isFillToWindow = false;
       fillConfig = null;
       fillDensity = null;
@@ -338,6 +642,12 @@ export function createMinesweeperCanvasController(
       previousStatus = store.getState().status;
       render();
     },
+    // ----------------------------------------------------------------------------
+    // Définit remplissage to fenêtre.
+    //
+    // Effets de bord :
+    // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+    // ----------------------------------------------------------------------------
     setFillToWindow: () => {
       if (!isFillToWindow || fillDensity === null) {
         fillDensity = getCellDensity(store.getState());
@@ -348,7 +658,16 @@ export function createMinesweeperCanvasController(
       previousStatus = store.getState().status;
       render();
     },
-    setZoom: zoom => {
+    // ----------------------------------------------------------------------------
+    // Définit zoom.
+    //
+    // Paramètres :
+    // - zoom : valeur fournie au traitement.
+    //
+    // Effets de bord :
+    // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+    // ----------------------------------------------------------------------------
+    setZoom: (zoom) => {
       if (layoutScale === zoom) return;
       layoutScale = zoom;
       if (isFillToWindow) {
@@ -357,6 +676,12 @@ export function createMinesweeperCanvasController(
       }
       render();
     },
+    // ----------------------------------------------------------------------------
+    // Libère le traitement demandé.
+    //
+    // Effets de bord :
+    // - peut mettre à jour l'état local, le DOM ou les dépendances appelées.
+    // ----------------------------------------------------------------------------
     dispose: () => {
       unsubscribe();
       unregisterImagesLoaded();
