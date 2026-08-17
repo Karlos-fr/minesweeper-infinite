@@ -14,7 +14,7 @@ Reproduction fidèle du Démineur classique pour navigateur, inspirée de l’in
 
 Minesweeper Infinite fonctionne directement dans un navigateur moderne, sans installation. Il conserve les règles et la présentation pixel art familières tout en ajoutant une grille responsive, un mode d’adaptation à la fenêtre et plusieurs niveaux de zoom.
 
-La présentation visuelle s’appuie sur [ShizukuIchi/minesweeper](https://github.com/ShizukuIchi/minesweeper), dont la version déployée est disponible sur [mines.vercel.app](https://mines.vercel.app/).
+La présentation visuelle s’appuie sur [ShizukuIchi/minesweeper](https://github.com/ShizukuIchi/minesweeper).
 
 ## Fonctionnalités
 
@@ -107,12 +107,6 @@ npm run preview
 ```
 
 L’application de production est générée dans `dist/`.
-
-## Déploiement GitHub Pages
-
-Le workflow `.github/workflows/gh-pages.yml` construit et publie le site à chaque push sur `main`. Le chemin de base Vite est configuré sur `/minesweeper-infinite/` dans `vite.config.ts`.
-
-Pour activer le déploiement dans un fork, sélectionnez **GitHub Actions** comme source Pages dans **Settings → Pages**.
 
 ## Choix techniques
 

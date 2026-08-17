@@ -14,7 +14,7 @@ A faithful browser recreation of the classic Minesweeper, inspired by the Window
 
 Minesweeper Infinite runs directly in a modern browser with no installation. It preserves the familiar rules and pixel-art presentation while adding a responsive grid, a fit-to-window mode, and several display zoom levels.
 
-The visual presentation is based on [ShizukuIchi/minesweeper](https://github.com/ShizukuIchi/minesweeper), whose deployed version is available at [mines.vercel.app](https://mines.vercel.app/).
+The visual presentation is based on [ShizukuIchi/minesweeper](https://github.com/ShizukuIchi/minesweeper).
 
 ## Features
 
@@ -107,12 +107,6 @@ npm run preview
 ```
 
 The production application is generated in `dist/`.
-
-## GitHub Pages Deployment
-
-The `.github/workflows/gh-pages.yml` workflow builds and publishes the site on every push to `main`. The Vite base path is configured as `/minesweeper-infinite/` in `vite.config.ts`.
-
-To enable deployment in a fork, select **GitHub Actions** as the Pages source under **Settings → Pages**.
 
 ## Technical Choices
 
